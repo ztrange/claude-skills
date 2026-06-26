@@ -1,0 +1,23 @@
+{
+  "skill_name": "ja-changelog",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Generate the changelog for SIGEM with the new releases since the last one we documented.",
+      "expected_output": "Spanish, client-facing changelog for SIGEM only, grouped by version (newest first), value-oriented bullets, internal/CI changes collapsed or omitted, saved as a draft .md and shown for review.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Create the changelogs for all three apps (EDL, SIGEM, Gabinete) for the latest releases.",
+      "expected_output": "Three Spanish changelog sections, one per app, each grouped by version; only published (non-draft, non-prerelease) releases included; ClickUp cross-check reflected in framing; draft saved for review.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "qué se liberó en gabinete últimamente? arma el resumen para el cliente",
+      "expected_output": "Recognizes this as a changelog request for Gabinete; produces Spanish client-facing value bullets for recent published releases; no commit/PR jargon in the body.",
+      "files": []
+    }
+  ]
+}

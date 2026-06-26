@@ -1,0 +1,5 @@
+.DS_Store
+# Built skill bundles are reproducible from source — don't track them.
+*.skill
+__pycache__/
+*.pyc
