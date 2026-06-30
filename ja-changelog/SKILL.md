@@ -2,13 +2,15 @@
 name: ja-changelog
 description: >-
   Generate client-facing release changelogs (in Spanish) for the Jalisco Alerta
-  applications — EDL (earth-data-lab), SIGEM (erlia-sigem), and Gabinete (ja-gabinete).
-  Pulls each repo, reads the published GitHub releases, interprets the commits/PRs that
-  shipped, cross-checks them against the matching ClickUp tasks, and writes a value-oriented
-  changelog grouped by app and by version. Use this whenever the user asks to "generate a
-  changelog", "update the changelog", "write release notes", "what shipped" / "qué se liberó",
-  or to summarize recent releases for the client/customer for any of these three apps — even if
-  they don't name the skill explicitly. Use it for a single app or all three.
+  applications — the admin platforms EDL (earth-data-lab) and SIGEM (erlia-sigem), the executive
+  dashboard Gabinete (ja-gabinete), and the consumer mobile app App JA (whose release notes come
+  from the developer's Slack posts, not GitHub). Reads each repo's published GitHub releases (or,
+  for App JA, the developer's Slack release messages), interprets what shipped, cross-checks the
+  GitHub apps against their ClickUp tasks, and writes a value-oriented changelog grouped by app and
+  by version, matching the client's changelog Google Doc. Use this whenever the user asks to
+  "generate a changelog", "update the changelog", "write release notes", "what shipped" / "qué se
+  liberó", or to summarize recent releases for the client/customer for any of these apps — including
+  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all.
 ---
 
 # Jalisco Alerta — Changelog Generator
@@ -20,16 +22,20 @@ stakeholders: each bullet should answer "what can the client now do, or what got
 The output is a **draft for the user to review and paste** into the changelog Google Doc.
 Do not write to the Doc directly — the Doc is read-only style/scope reference.
 
-## The three apps
+## The apps
 
-| App | Role | Local folder | GitHub repo | ClickUp list id | Version |
-|-----|------|--------------|-------------|-----------------|---------|
-| **EDL** | Admin platform — sends alerts to the JA mobile app; risk monitor | `earth-data-lab` | `erliamx/erlia-earth-data-lab` | `901316895002` | `v2.x` |
-| **SIGEM** | Admin platform — resource/vehicle/incident tracking during emergencies | `erlia-sigem` | `erliamx/erlia-sigem` | `901322617067` | `v1.x` |
-| **Gabinete** | High-level executive dashboard | `gabinete` | `erliamx/ja-gabinete` | `901326844993` | `v0.x` |
+| App | Role | Source of changes | Local folder | GitHub repo | ClickUp list id | Version |
+|-----|------|-------------------|--------------|-------------|-----------------|---------|
+| **EDL** | Admin platform — sends alerts to the JA mobile app; risk monitor | GitHub releases | `earth-data-lab` | `erliamx/erlia-earth-data-lab` | `901316895002` | `v2.x` |
+| **SIGEM** | Admin platform — resource/vehicle/incident tracking during emergencies | GitHub releases | `erlia-sigem` | `erliamx/erlia-sigem` | `901322617067` | `v1.x` |
+| **Gabinete** | High-level executive dashboard | GitHub releases | `gabinete` | `erliamx/ja-gabinete` | `901326844993` | `v0.x` |
+| **App JA** | Consumer mobile app — receives EDL's alerts | **Slack** (dev posts) | — | — | `901316895020` | `v2.x` |
 
 Repos live under the working directory (default `/Users/marioferreira/Documents/repos/erlia`).
-Process whichever apps the user asked for; default to all three.
+Process whichever apps the user asked for; default to all (admin apps + App JA).
+
+The three GitHub apps use the workflow below. **App JA is different** — its release notes come from
+Slack, not GitHub — see "App JA (mobile app)" near the end.
 
 ## Workflow
 
@@ -138,6 +144,43 @@ Note: the connected Google Drive integration is **read-only** — there is no AP
 existing Google Doc, and a plain-text insert wouldn't reproduce the native list styling anyway. So
 the user copies the boxes themselves. Only attempt to write into the Doc if a real Google Docs edit
 tool (or the browser extension) is available **and** the user explicitly asks for it.
+
+## App JA — the mobile app (source: Slack, not GitHub)
+
+App JA has no usable GitHub release flow here; instead the **developer posts each version's "texto
+para tiendas" (app-store release text) in Slack**. Treat App JA as another section of the same
+Google Doc: it lives at the **top** of the Doc under `# App JA` / `# App Jalisco Alerta`.
+
+### Find the release messages
+- Slack channel **#app-jalisco-alerta** (id `C099DKW3MV0`), author **Diego R Galindo** (`U099H6TPS04`).
+- A **relevant message** = a version number (`version 2.26.0` / `Versión 2.21.0`) followed by a
+  fenced ```code block``` of consumer-facing prose. **Skip** feedback-form entries, screenshots, and
+  technical discussion threads — they are not release texts.
+- Read them with `slack_read_channel` on the channel, or `slack_search_public` with
+  `from:<@U099H6TPS04> in:<#C099DKW3MV0>`. **Versions are sometimes skipped** (not every build ships
+  a store text), so don't assume contiguous numbering — if a version between the last documented one
+  and the latest has no message, it was likely skipped; note it rather than inventing content.
+
+### Scope
+Same rule as the other apps: the last documented version is the highest real `## vX.Y.Z` under the
+App JA section of the Doc (skip the `## v2.. (...)` / `- Feature` stub). Add only newer messages,
+newest-first.
+
+### Reformat — the App JA voice is warmer than the admin apps
+The dev writes flowing second-person paragraphs; the Doc's App JA section is **more
+consumer-marketing** than the admin sections. Convert the prose into Doc-style bullets:
+- **Lead user-facing features** with "Ahora puedes…", "Ahora la app…", or first-person-plural
+  "Renovamos…/Mejoramos…/Agregamos…/Ampliamos…", keeping the benefit clause ("…para una experiencia
+  más clara").
+- Use impersonal "Se corrige… / Se agrega…" for **fixes and internal/stability** items.
+- One bullet per distinct change; use nested sub-bullets for enumerations (e.g. the Mundial content
+  list — parent bullet ending in `:` then indented sub-bullets).
+- Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` **only** if the post says
+  the version is platform-specific. The date is the store-release date — use the Slack post date as a
+  proxy and flag it for the user to confirm.
+
+Present App JA exactly like step 6 (copy-boxes: heading line + dashless bullets). See
+`references/changelog-style.md` for worked App JA before/after examples.
 
 ## Why drafts matter (don't skip this)
 
