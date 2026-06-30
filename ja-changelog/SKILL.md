@@ -29,7 +29,7 @@ Do not write to the Doc directly — the Doc is read-only style/scope reference.
 | **EDL** | Admin platform — sends alerts to the JA mobile app; risk monitor | GitHub releases | `earth-data-lab` | `erliamx/erlia-earth-data-lab` | `901316895002` | `v2.x` |
 | **SIGEM** | Admin platform — resource/vehicle/incident tracking during emergencies | GitHub releases | `erlia-sigem` | `erliamx/erlia-sigem` | `901322617067` | `v1.x` |
 | **Gabinete** | High-level executive dashboard | GitHub releases | `gabinete` | `erliamx/ja-gabinete` | `901326844993` | `v0.x` |
-| **App JA** | Consumer mobile app — receives EDL's alerts | **Slack** (dev posts) | — | — | `901316895020` | `v2.x` |
+| **App JA** | Consumer mobile app — receives EDL's alerts | **Slack** text + prod-deploy workflow | — | `erliamx/erlia-app` (no releases) | `901316895020` | `v2.x` |
 
 Repos live under the working directory (default `/Users/marioferreira/Documents/repos/erlia`).
 Process whichever apps the user asked for; default to all (admin apps + App JA).
@@ -147,24 +147,39 @@ tool (or the browser extension) is available **and** the user explicitly asks fo
 
 ## App JA — the mobile app (source: Slack, not GitHub)
 
-App JA has no usable GitHub release flow here; instead the **developer posts each version's "texto
-para tiendas" (app-store release text) in Slack**. Treat App JA as another section of the same
-Google Doc: it lives at the **top** of the Doc under `# App JA` / `# App Jalisco Alerta`.
+App JA's repo (`erliamx/erlia-app`) has **no GitHub releases**, so the collector doesn't apply.
+Instead: **which versions shipped** comes from a GitHub Actions workflow, and **the descriptive
+text** comes from the developer's Slack posts. Treat App JA as another section of the same Google
+Doc: it lives at the **top** of the Doc under `# App JA` / `# App Jalisco Alerta`.
 
-### Find the release messages
+### Scope — which versions actually shipped (authoritative)
+A version is "released" only when it deployed to the production store. The source of truth is the
+**"Deploy Android production App"** workflow (id `178346105`) in `erliamx/erlia-app`: a run that
+**succeeded** on a branch named **`rc/X.Y.Z`** = version `X.Y.Z` shipped to production, and the run
+date is the release date.
+
+```bash
+gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
+  --limit 40 --json headBranch,createdAt \
+  --jq '.[] | select(.headBranch|test("^rc/[0-9]")) | "\(.headBranch[3:])  \(.createdAt[:10])"'
+```
+
+The last documented version is the highest real `## vX.Y.Z` under the App JA section of the Doc
+(skip the `## v2.. (...)` / `- Feature` stub). Add every shipped version newer than that, newest-first,
+using the **deploy date** for the heading. **Versions are commonly skipped** (e.g. v2.22/2.25 never
+deployed) — the workflow tells you exactly what shipped, so don't assume contiguous numbering.
+
+### Find the descriptive text per version
 - Slack channel **#app-jalisco-alerta** (id `C099DKW3MV0`), author **Diego R Galindo** (`U099H6TPS04`).
 - A **relevant message** = a version number (`version 2.26.0` / `Versión 2.21.0`) followed by a
-  fenced ```code block``` of consumer-facing prose. **Skip** feedback-form entries, screenshots, and
-  technical discussion threads — they are not release texts.
-- Read them with `slack_read_channel` on the channel, or `slack_search_public` with
-  `from:<@U099H6TPS04> in:<#C099DKW3MV0>`. **Versions are sometimes skipped** (not every build ships
-  a store text), so don't assume contiguous numbering — if a version between the last documented one
-  and the latest has no message, it was likely skipped; note it rather than inventing content.
-
-### Scope
-Same rule as the other apps: the last documented version is the highest real `## vX.Y.Z` under the
-App JA section of the Doc (skip the `## v2.. (...)` / `- Feature` stub). Add only newer messages,
-newest-first.
+  fenced ```code block``` of consumer-facing prose ("texto para tiendas"). **Skip** feedback-form
+  entries, screenshots, and technical threads.
+- Find them with `slack_read_channel` or `slack_search_public` with
+  `from:<@U099H6TPS04> in:<#C099DKW3MV0>` (or search the specific version).
+- **If a shipped version has no Slack text** (typically a hotfix/patch, e.g. v2.26.1), get its
+  commits instead — compare the rc run's `headSha` against the previous version's
+  (`gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`) and write one concise
+  client-facing line, or a generic stability line if nothing is user-visible. Flag it for the user.
 
 ### Reformat — the App JA voice is warmer than the admin apps
 The dev writes flowing second-person paragraphs; the Doc's App JA section is **more
