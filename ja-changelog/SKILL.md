@@ -150,7 +150,11 @@ Doc, not by Markdown). The user pastes manually, so:
 - For **each version**, emit **two separate fenced code blocks** (each gets its own copy button):
   1. The **heading line only**: `vX.Y.Z (D mmmm aaaa)` — no `##`, no leading dash.
   2. The **bullets** for that version, **with NO leading `- ` markers** (one change per line), so
-     they don't collide with the Doc's automatic bullets. Indent nested sub-items with spaces.
+     they don't collide with the Doc's automatic bullets. Indent nested sub-items with a **real Tab
+     character** (U+0009), **not spaces**. Google Docs does **not** auto-nest from the pasted tab,
+     but this lets the user paste the whole block in one shot and then quickly demote the tabbed
+     lines / delete the tabs — which the user prefers over multiple copy-paste cycles per level.
+     (Emit an actual tab byte in the code block, not the literal characters "\t" and not spaces.)
 - Group these under a plain-text label per app (`# Codename` / `# Full Name`), versions newest-first.
 - Surface any discrepancies from step 4 and any releases you intentionally skipped (as normal text,
   outside the copy boxes).
