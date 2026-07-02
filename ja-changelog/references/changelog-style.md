@@ -110,42 +110,40 @@ Good:
     - Creación y edición de visitas
 ```
 
-## App Jalisco Alerta (mobile app) — warmer voice
+## App Jalisco Alerta (mobile app) — elevate the tone
 
-This section's source is the developer's Slack store-text (see SKILL.md "App JA"), and its tone is
-**more consumer-marketing** than the admin apps. Two registers coexist:
-- **User-facing features** lead with "Ahora puedes… / Ahora la app…" or first-person-plural
-  "Renovamos… / Mejoramos… / Agregamos… / Ampliamos…", with a benefit clause.
-- **Fixes / internal / stability** keep the impersonal "Se corrige… / Se agrega… / Se incluyen…".
+The source is the developer's Slack store-text (see SKILL.md "App JA"), written for **end users**
+("Ahora puedes…, disfruta…, para ti"). Our Doc's audience is **non-technical product stakeholders**,
+so App JA uses the **same formal, impersonal register as the admin apps** — elevate the tone,
+don't copy the end-user marketing voice. Headings/date format are the same as the rest of the Doc
+(`## vX.Y.Z (D mmmm aaaa)`), optional ` - Solo Android` / ` - Solo iOS` suffix if platform-specific.
 
-Headings and date format are the same as the rest of the Doc (`## vX.Y.Z (D mmmm aaaa)`), with an
-optional ` - Solo Android` / ` - Solo iOS` suffix when the version is platform-specific.
-
-**Example A — dev paragraph → App JA bullets**
-Input (Slack store-text):
+**Example A — Slack store-text (end-user tone) → stakeholder bullets (formal)**
+Input (Slack):
 > "Ahora puedes calificar las alertas que recibes y enviarnos comentarios o sugerencias directamente
 > desde la app. También renovamos el contenido del módulo del Mundial 2026 y mejoramos el mapa.
 > Además, ampliamos el contenido en todos los idiomas e incluimos mejoras de rendimiento."
-Output:
+Output (elevated register):
 ```markdown
-- Ahora puedes calificar las alertas que recibes.
-- Ahora puedes enviarnos comentarios o sugerencias directamente desde la app, ayudándonos a seguir mejorando tu experiencia.
-- Renovamos el contenido del módulo del Mundial 2026 con una experiencia más interactiva.
-- Mejoramos el mapa para facilitar la visualización del pronóstico del tiempo y de la información disponible.
-- Ampliamos el contenido disponible en todos los idiomas compatibles.
-- Incluimos mejoras generales de rendimiento y estabilidad.
+- Se agrega la posibilidad de calificar las alertas recibidas.
+- Se agrega el envío de comentarios o sugerencias directamente desde la aplicación.
+- Se renueva el contenido del módulo del Mundial 2026 con una experiencia más interactiva.
+- Se mejora el mapa para facilitar la visualización del pronóstico del tiempo y de la información.
+- Se amplía el contenido disponible en todos los idiomas compatibles.
+- Se realizan mejoras generales de rendimiento y estabilidad.
 ```
+Note the elevation: Slack "Ahora puedes calificar…" → "Se agrega la posibilidad de calificar…".
 
 **Example B — enumeration → nested sub-bullets (real Doc pattern)**
 ```markdown
-- Actualizaciones en la sección del Mundial:
-    - 10 hospitales (5 públicos, 5 privados)
-    - 14 hoteles
-    - 10 restaurantes
+- Se incorpora un nuevo módulo sobre el sismo en Venezuela:
+    - Descripción de lo ocurrido
+    - Recomendaciones útiles
+    - Enlaces oficiales para brindar apoyo
 ```
 
-Note the contrast: an admin-app bug fix reads `Se corrige el error que causaba que…`, while an App
-JA feature reads `Ahora puedes…` — same Doc, different section, different voice.
+So the whole Doc reads in one consistent formal register — admin apps and App JA alike use
+`Se agrega… / Se incorpora… / Se mejora… / Se corrige el error que causaba que…`.
 
 ## Common pitfalls
 

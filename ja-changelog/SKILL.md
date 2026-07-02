@@ -204,18 +204,23 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
   line from its commits (compare the rc run's `headSha` against the previous version's via
   `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
 
-### Reformat — the App JA voice is warmer than the admin apps
-The dev writes flowing second-person paragraphs; the Doc's App JA section is **more
-consumer-marketing** than the admin sections. Convert the prose into Doc-style bullets:
-- **Lead user-facing features** with "Ahora puedes…", "Ahora la app…", or first-person-plural
-  "Renovamos…/Mejoramos…/Agregamos…/Ampliamos…", keeping the benefit clause ("…para una experiencia
-  más clara").
-- Use impersonal "Se corrige… / Se agrega…" for **fixes and internal/stability** items.
-- One bullet per distinct change; use nested sub-bullets for enumerations (e.g. the Mundial content
+### Reformat — elevate the tone for product stakeholders
+The Slack source is written for **end users** ("Ahora puedes…", "disfruta…", "para ti", "tu
+experiencia"). But our changelog's audience is **non-technical product stakeholders**, so use the
+**same slightly-more-formal, impersonal register as the admin-app sections** — don't carry over the
+end-user marketing voice. Convert the prose into Doc-style bullets:
+- Use **impersonal, value-oriented phrasing**: "Se agrega… / Se incorpora… / Se mejora… / Se corrige
+  el error que causaba que…". **Drop** "Ahora puedes…", "disfruta…", "para ti", "tu experiencia".
+- Stay readable and non-technical (not engineering jargon) — just more formal than the Slack text.
+  E.g. Slack "Ahora puedes calificar las alertas que recibes" → "Se agrega la posibilidad de calificar
+  las alertas recibidas".
+- One bullet per distinct change; nested sub-bullets for enumerations (e.g. the Mundial content
   list — parent bullet ending in `:` then indented sub-bullets).
-- Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` **only** if the post says
-  the version is platform-specific. The date is the store-release date — use the Slack post date as a
-  proxy and flag it for the user to confirm.
+- Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` only if the version is
+  platform-specific. Use the production-deploy date; the announcement date is a placeholder.
+
+(Note: older App JA entries already in the Doc were written in the warmer end-user voice — that's
+legacy; new entries use this formal register.)
 
 Present App JA exactly like step 6 (copy-boxes: heading line + dashless bullets). See
 `references/changelog-style.md` for worked App JA before/after examples.
