@@ -181,16 +181,24 @@ using the **deploy date** for the heading. **Versions are commonly skipped** (e.
 deployed) — the workflow tells you exactly what shipped, so don't assume contiguous numbering.
 
 ### Find the descriptive text per version
-- Slack channel **#app-jalisco-alerta** (id `C099DKW3MV0`), author **Diego R Galindo** (`U099H6TPS04`).
-- A **relevant message** = a version number (`version 2.26.0` / `Versión 2.21.0`) followed by a
-  fenced ```code block``` of consumer-facing prose ("texto para tiendas"). **Skip** feedback-form
-  entries, screenshots, and technical threads.
-- Find them with `slack_read_channel` or `slack_search_public` with
-  `from:<@U099H6TPS04> in:<#C099DKW3MV0>` (or search the specific version).
-- **If a shipped version has no Slack text** (typically a hotfix/patch, e.g. v2.26.1), get its
-  commits instead — compare the rc run's `headSha` against the previous version's
-  (`gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`) and write one concise
-  client-facing line, or a generic stability line if nothing is user-visible. Flag it for the user.
+The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
+tiendas") in Slack. As of **1 jul 2026** the dedicated channel is **#app-changelog** (id
+`C0BEE1F2UR3`) — read it first; the older **#app-jalisco-alerta** (id `C099DKW3MV0`) holds prior
+history. Use `slack_read_channel` on the channel (and `slack_read_thread` for replies).
+- A **relevant message** = a version number (`Versión 2.27.0` / `version 2.26.0`) followed by a
+  fenced ```code block``` of consumer-facing prose. **Skip** join/approval chatter, feedback-form
+  entries, and screenshots.
+- **Several RCs per version.** The same version may get multiple posts/RCs in #app-changelog as it
+  is refined. **Read them all (including thread replies), accumulate their content into that one
+  version's entry, mention every RC to the user, and keep updating that version's draft on each run
+  until the user has pasted it into the Doc** — its content may still be changing.
+- **A version is often announced here before it deploys to production.** #app-changelog gives the
+  *notes*; the Deploy-Android-production workflow (above) gives the authoritative *ship status/date*.
+  Surface an announced version even if it's not in prod yet, but **flag its prod status** (shipped vs
+  pending) — use the real deploy date once it ships; the announcement date is only a placeholder.
+- **If a shipped version has no store text** (e.g. hotfix v2.26.1), derive one concise client-facing
+  line from its commits (compare the rc run's `headSha` against the previous version's via
+  `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
 
 ### Reformat — the App JA voice is warmer than the admin apps
 The dev writes flowing second-person paragraphs; the Doc's App JA section is **more
