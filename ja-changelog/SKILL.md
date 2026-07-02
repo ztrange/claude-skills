@@ -89,6 +89,17 @@ Filter out noise the client doesn't care about: pure CI/pipeline bumps, dependen
 lint/formatting, test-only changes, infra refactors with no user-visible effect. Tech-debt and
 internal items belong at most in a brief "técnico/interno" note, not as headline value.
 
+**Also exclude — even though it shipped — anything the client can't actually see yet:**
+- **Feature-flagged-off in production.** If a feature is gated behind a production feature flag
+  (look for PRs like "hide … in production via feature flag") or its ClickUp task is still open
+  (not done/ready), **don't mention it until it's live for the client**. Note it to the user as
+  excluded so they know it's pending, not lost.
+- **Work that belongs to a different app.** Some backend changes in one repo actually support
+  another app. Notably, **"Venezuela" changes in EDL** are backend for an **App JA** disaster-relief
+  feature (*acopio de víveres para desastre natural*) — they do **not** belong in EDL's client
+  changelog; they'll surface under App JA when that feature ships. Route such changes to the right
+  app or omit.
+
 ### 4. Cross-check against ClickUp
 
 The PR/commit titles follow the same prefix convention as the ClickUp task names
