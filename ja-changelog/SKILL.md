@@ -201,6 +201,28 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
   --jq '.[] | "#\(.number)  \(.headBranch)  \(.createdAt[:10])"'
 ```
 
+**The 100% reliable ship check is the store itself — confirm there before you mark a version live
+or pending.** The GitHub workflow tells you what the *pipeline* did; the app stores tell you what
+the *client can actually download*. Always confirm the latest version's ship status against the
+store, especially before applying (or removing) a ` - Pendiente` suffix.
+- **Apple App Store** (authoritative, clean JSON — gives the live version **and** its release date):
+  ```bash
+  curl -s "https://itunes.apple.com/lookup?bundleId=mx.erlia.jal.ios&country=mx" \
+    | python3 -c "import sys,json; a=json.load(sys.stdin)['results'][0]; print(a['version'], a['currentVersionReleaseDate'][:10])"
+  ```
+  (App Store id `6748151640`.) When this returns the version you're documenting, it **is** live —
+  use `currentVersionReleaseDate` as the deploy date for the heading.
+- **Google Play** (Android pkg `mx.erlia.jal.android`) has **no public version API**; scrape the
+  details page and read the current-version token (heuristic — Google can change the structure):
+  ```bash
+  curl -s -A "Mozilla/5.0" "https://play.google.com/store/apps/details?id=mx.erlia.jal.android&hl=es&gl=US" \
+    | grep -oE '\[\[\["[0-9]+\.[0-9]+\.[0-9]+"\]\]' | head -1
+  ```
+- The store only reports the **currently-live** version (not historical per-version dates), so it's
+  the source of truth for "is the newest announced version live yet?"; use the deploy workflow for
+  dates of older versions. If the two stores show **different** live versions, the app shipped to one
+  platform first — add ` - Solo Android` / ` - Solo iOS` accordingly.
+
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
 tiendas") in Slack. As of **1 jul 2026** the dedicated channel is **#app-changelog** (id
