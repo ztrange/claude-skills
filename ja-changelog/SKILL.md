@@ -188,6 +188,19 @@ The last documented version is the highest real `## vX.Y.Z` under the App JA sec
 using the **deploy date** for the heading. **Versions are commonly skipped** (e.g. v2.22/2.25 never
 deployed) — the workflow tells you exactly what shipped, so don't assume contiguous numbering.
 
+**The `rc/X.Y.Z` branch name is a convention, not a guarantee — don't trust the regex alone.**
+Developers sometimes deploy a version from a differently-named branch (e.g. v2.27.0 shipped from
+`rc/feature/venezuela`, PR #137), so the `test("^rc/[0-9]")` filter above **silently misses it** and
+the version looks unshipped when it actually went live. So: if a Slack-announced version has **no**
+matching `rc/X.Y.Z` deploy, do **not** conclude it's pending — list *all* recent successful runs of
+this workflow regardless of branch name and match by date/PR/feature to the announcement before
+deciding. Widen the query by dropping the `select(...)` filter:
+```bash
+gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
+  --limit 40 --json number,headBranch,createdAt \
+  --jq '.[] | "#\(.number)  \(.headBranch)  \(.createdAt[:10])"'
+```
+
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
 tiendas") in Slack. As of **1 jul 2026** the dedicated channel is **#app-changelog** (id
