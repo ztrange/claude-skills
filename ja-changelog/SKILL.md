@@ -223,10 +223,9 @@ the ` - Pendiente` rule below).
   Google Play is **informational only** — it does **not** gate ` - Pendiente` removal (Apple does).
 - The store only reports the **currently-live** version (not historical per-version dates), so it's
   the source of truth for "is the newest announced version live yet?"; use the deploy workflow for
-  dates of older versions. If Play shows the version live but the App Store still doesn't, it's an
-  Android-first rollout — **keep ` - Pendiente`** and just note the Android availability to the user.
-  Only treat it as a deliberate ` - Solo Android` release (dropping Pendiente) if the user confirms
-  iOS is intentionally not shipping.
+  dates of older versions. Single-store releases are rare, so assume iOS and Android ship together;
+  in the uncommon case they diverge, keep ` - Pendiente` until the App Store lists it and flag it to
+  the user rather than guessing a ` - Solo Android` / ` - Solo iOS` label.
 
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
