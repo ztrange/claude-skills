@@ -204,6 +204,11 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
   *notes*; the Deploy-Android-production workflow (above) gives the authoritative *ship status/date*.
   Surface an announced version even if it's not in prod yet, but **flag its prod status** (shipped vs
   pending) — use the real deploy date once it ships; the announcement date is only a placeholder.
+  When an announced-but-unshipped version is added to the Doc, its heading carries a **` - Pendiente`**
+  suffix (e.g. `## v2.27.0 (1 julio 2026) - Pendiente`) with the announcement date as placeholder.
+  **On every subsequent run, re-check that version against the Deploy-Android-production workflow:**
+  while `rc/X.Y.Z` still hasn't succeeded, keep the ` - Pendiente` suffix; once it ships, give the
+  user the corrected heading — drop ` - Pendiente` and set the date to the real prod deploy date.
 - **If a shipped version has no store text** (e.g. hotfix v2.26.1), derive one concise client-facing
   line from its commits (compare the rc run's `headSha` against the previous version's via
   `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
@@ -221,7 +226,9 @@ end-user marketing voice. Convert the prose into Doc-style bullets:
 - One bullet per distinct change; nested sub-bullets for enumerations (e.g. the Mundial content
   list — parent bullet ending in `:` then indented sub-bullets).
 - Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` only if the version is
-  platform-specific. Use the production-deploy date; the announcement date is a placeholder.
+  platform-specific. Use the production-deploy date; the announcement date is a placeholder. If the
+  version is announced but not yet deployed to prod, append ` - Pendiente` and use the announcement
+  date as placeholder (see the scope rules above for how it gets removed once the version ships).
 
 (Note: older App JA entries already in the Doc were written in the warmer end-user voice — that's
 legacy; new entries use this formal register.)
