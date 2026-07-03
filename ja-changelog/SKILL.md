@@ -201,11 +201,13 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
   --jq '.[] | "#\(.number)  \(.headBranch)  \(.createdAt[:10])"'
 ```
 
-**The 100% reliable ship check is the store itself — confirm there before you mark a version live
-or pending.** The GitHub workflow tells you what the *pipeline* did; the app stores tell you what
-the *client can actually download*. Always confirm the latest version's ship status against the
-store, especially before applying (or removing) a ` - Pendiente` suffix.
-- **Apple App Store** (authoritative, clean JSON — gives the live version **and** its release date):
+**The Apple App Store is the single source of truth for whether a version has shipped.** The GitHub
+workflow and the Slack post only tell you what the *pipeline* did; the store tells you what the
+*client can actually download*. A version is "released" **only** once it appears in the App Store —
+so confirm there before you mark any version live, and gate every ` - Pendiente` removal on it (see
+the ` - Pendiente` rule below).
+- **Apple App Store** (the authoritative check — clean JSON, gives the live version **and** its
+  release date):
   ```bash
   curl -s "https://itunes.apple.com/lookup?bundleId=mx.erlia.jal.ios&country=mx" \
     | python3 -c "import sys,json; a=json.load(sys.stdin)['results'][0]; print(a['version'], a['currentVersionReleaseDate'][:10])"
@@ -218,10 +220,13 @@ store, especially before applying (or removing) a ` - Pendiente` suffix.
   curl -s -A "Mozilla/5.0" "https://play.google.com/store/apps/details?id=mx.erlia.jal.android&hl=es&gl=US" \
     | grep -oE '\[\[\["[0-9]+\.[0-9]+\.[0-9]+"\]\]' | head -1
   ```
+  Google Play is **informational only** — it does **not** gate ` - Pendiente` removal (Apple does).
 - The store only reports the **currently-live** version (not historical per-version dates), so it's
   the source of truth for "is the newest announced version live yet?"; use the deploy workflow for
-  dates of older versions. If the two stores show **different** live versions, the app shipped to one
-  platform first — add ` - Solo Android` / ` - Solo iOS` accordingly.
+  dates of older versions. If Play shows the version live but the App Store still doesn't, it's an
+  Android-first rollout — **keep ` - Pendiente`** and just note the Android availability to the user.
+  Only treat it as a deliberate ` - Solo Android` release (dropping Pendiente) if the user confirms
+  iOS is intentionally not shipping.
 
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
@@ -235,15 +240,20 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
   is refined. **Read them all (including thread replies), accumulate their content into that one
   version's entry, mention every RC to the user, and keep updating that version's draft on each run
   until the user has pasted it into the Doc** — its content may still be changing.
-- **A version is often announced here before it deploys to production.** #app-changelog gives the
-  *notes*; the Deploy-Android-production workflow (above) gives the authoritative *ship status/date*.
-  Surface an announced version even if it's not in prod yet, but **flag its prod status** (shipped vs
-  pending) — use the real deploy date once it ships; the announcement date is only a placeholder.
-  When an announced-but-unshipped version is added to the Doc, its heading carries a **` - Pendiente`**
+- **A version is often announced here before it reaches the store.** #app-changelog gives the
+  *notes*; the Slack post and the deploy workflow only mean the build was *cut/deployed*, **not** that
+  the client can download it. Surface an announced version even if it's not live yet, but **flag its
+  status** and mark it pending until the store confirms it.
+  When an announced-but-unreleased version is added to the Doc, its heading carries a **` - Pendiente`**
   suffix (e.g. `## v2.27.0 (1 julio 2026) - Pendiente`) with the announcement date as placeholder.
-  **On every subsequent run, re-check that version against the Deploy-Android-production workflow:**
-  while `rc/X.Y.Z` still hasn't succeeded, keep the ` - Pendiente` suffix; once it ships, give the
-  user the corrected heading — drop ` - Pendiente` and set the date to the real prod deploy date.
+- **The Apple App Store is the single source of truth for removing ` - Pendiente`. Remove it the
+  moment the version appears there — and never one moment before.** On every subsequent run, look up
+  the live App Store version (the `itunes.apple.com/lookup` command above):
+  - If the store's live version is **not yet** the pending version → keep ` - Pendiente` as-is,
+    regardless of what Slack, the deploy workflow, or Google Play say. A cut build, a green pipeline,
+    or an Android-only rollout is **not** enough.
+  - Once the App Store lists that version → drop ` - Pendiente` and set the heading date to the
+    store's `currentVersionReleaseDate`. Hand the user the corrected heading.
 - **If a shipped version has no store text** (e.g. hotfix v2.26.1), derive one concise client-facing
   line from its commits (compare the rc run's `headSha` against the previous version's via
   `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
