@@ -160,7 +160,9 @@ python3 scripts/collect_app_changes.py <repo_path> --since <last_documented_tag>
 ```
 
 Omit `--since` for a full backfill. The script prints JSON: each in-scope release with its
-`compareRange`, merged `prs` (number, branch, title), `commits`, and `changedFiles`.
+`compareRange`, merged `prs` (number, branch, title), `commits`, and `changedFiles` (each an
+`{status, path}` where status is `A`dded / `M`odified / `D`eleted / `R`enamed — see step 3 for why
+added-vs-modified matters).
 
 ### 3. Interpret what each release actually does
 
@@ -172,6 +174,17 @@ high-impact and the title is terse (e.g. `fix: default fields`), inspect the act
 git -C <repo_path> log <compareRange> --oneline
 git -C <repo_path> show <commit_hash>        # or: git diff <compareRange> -- <path>
 ```
+
+**New thing, or a change to an existing thing? Pick the verb accordingly — don't default to "Se
+agrega."** A frequent error is writing "Se agrega una vista/función…" for what is actually a *change*
+to something that already exists (e.g. swapping the data source behind an existing screen). Two
+signals disambiguate: (1) **the changed-file `status`** — if the touched UI/feature files are all
+`M`odified (none `A`dded), it's a change to existing behavior, not a new view; a genuinely new
+screen/module/endpoint appears as `A`dded files/routes. (2) **the ClickUp task's own verb** — a task
+named `Cambiar/Migrar/Ajustar fuente…` means *change*, not *add*. Example: `MON: Cambiar fuente de
+datos para riesgos detectados` (all files modified) → "Se cambia la fuente de datos del monitor para
+usar los riesgos registrados", **not** "Se agrega una vista de riesgos". Use `Se cambia/Se mejora…`
+for changes, `Se agrega/Se incorpora…` only for genuinely new capabilities.
 
 Filter out noise the client doesn't care about: pure CI/pipeline bumps, dependency upgrades,
 lint/formatting, test-only changes, infra refactors with no user-visible effect. Tech-debt and

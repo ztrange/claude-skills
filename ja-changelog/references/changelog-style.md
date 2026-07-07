@@ -148,6 +148,12 @@ So the whole Doc reads in one consistent formal register — admin apps and App 
 ## Common pitfalls
 
 - Don't list every commit — a release with 12 commits often maps to 3–5 client bullets.
+- **Don't default to "Se agrega."** Distinguish a *new* thing from a *change* to an existing one. If
+  every changed file is `Modified` (none `Added`), or the ClickUp task's verb is `Cambiar/Migrar/
+  Ajustar`, it's a change → `Se cambia/Se mejora…`, never `Se agrega una vista/función…`. Reserve
+  `Se agrega/Se incorpora…` for genuinely new capabilities (new screen/module/endpoint = `Added`
+  files). E.g. `MON: Cambiar fuente de datos para riesgos detectados` → "Se cambia la fuente de datos
+  del monitor para usar los riesgos registrados", NOT "Se agrega la vista de riesgos registrados".
 - Don't invent benefits. If a change's client value is unclear, inspect the diff or the ClickUp
   task; if still unclear, fold it into the internal-improvements line rather than guessing.
 - Don't translate commit messages literally — translate the *intent*.

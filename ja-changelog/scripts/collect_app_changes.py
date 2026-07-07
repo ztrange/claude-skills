@@ -97,8 +97,19 @@ def collect_range(repo, rng, has_prev):
         title = next((ln.strip() for ln in body.splitlines() if ln.strip()), "")
         prs.append({"number": num, "branch": branch, "title": title})
 
-    files_raw = run(["git", "diff", "--name-only", rng], cwd=repo) if has_prev else ""
-    files = [f for f in files_raw.splitlines() if f.strip()]
+    # Changed files WITH status (A/M/D/R…) — the added-vs-modified signal matters: a change that
+    # only *modifies* existing files is almost never "Se agrega [una vista/función nueva]"; it's a
+    # change to something that already exists. New screens/modules/endpoints show up as added (A).
+    files_raw = run(["git", "diff", "--name-status", rng], cwd=repo) if has_prev else ""
+    files = []
+    for ln in files_raw.splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        parts = ln.split("\t")
+        status = parts[0][0] if parts[0] else "?"   # first char: A/M/D/R/C
+        path = parts[-1]                            # for renames (R), this is the new path
+        files.append({"status": status, "path": path})
     return commits, prs, files
 
 
