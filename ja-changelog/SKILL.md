@@ -10,10 +10,11 @@ description: >-
   by version, matching the client's changelog Google Doc. Use this whenever the user asks to
   "generate a changelog", "update the changelog", "write release notes", "what shipped" / "qué se
   liberó", or to summarize recent releases for the client/customer for any of these apps — including
-  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all. Also
-  supports a `preview` mode (invoke with "preview" / "simulado", e.g. "/ja-changelog preview") that
-  simulates the changelog for the merged-but-unreleased work at the tip of each system — an internal
-  "what would ship if we released now" view, not for the client Doc.
+  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all.
+  Invoked with no mode word it does a combined run — pending released updates (paste-ready) followed
+  by a preview of the work queued after the latest release. `released` gives only the paste-ready
+  release notes; `preview` (a.k.a. "simulado", e.g. "/ja-changelog preview") gives only the
+  merged-but-unreleased look-ahead and halts if the Doc is missing a published release.
 ---
 
 # Jalisco Alerta — Changelog Generator
@@ -40,14 +41,29 @@ Process whichever apps the user asked for; default to all (admin apps + App JA).
 The three GitHub apps use the workflow below. **App JA is different** — its release notes come from
 Slack, not GitHub — see "App JA (mobile app)" near the end.
 
-## Two modes: `released` (default) and `preview`
+## Modes: default combined, `released`, `preview`
 
-This skill runs in one of two modes. **Default is `released`** — the full workflow below, producing
-paste-ready copy-boxes for the client Doc. If the invocation includes the word **`preview`** (or
-`simulado` / `simulación`) — e.g. `/ja-changelog preview` or `/ja-changelog preview gabinete` — run
-in **`preview` mode** instead. Everything about *interpreting* changes, the ClickUp cross-check, the
-Spanish voice/style, and the "one bullet per change / nested sub-bullets" formatting is **identical**
-in both modes — only **scope, collection, the App JA source, and the presentation** differ.
+This skill has two underlying modes — **`released`** (documents published releases into the client
+Doc) and **`preview`** (the merged-but-unreleased backlog at the tip of `main`) — selected by a word
+in the invocation. Everything about *interpreting* changes, the ClickUp cross-check, the Spanish
+voice/style, and the "one bullet per change / nested sub-bullets" formatting is **identical**
+everywhere — only **scope, collection, the App JA source, and the presentation** differ.
+
+- **No mode word → default combined run.** Do **`released` first**, then **`preview`** — back to
+  back, in that order. The released part produces the paste-ready copy-boxes for any published
+  release not yet in the Doc; the preview part then shows the work done **after the latest published
+  release** (baseline = latest published tag → tip of `main`). In this combined run the preview part
+  **does NOT run the preflight gate** — it shows the post-release backlog **even if the released
+  entries above it still need pasting** (the two are shown together, disjoint: documented→latest
+  published, then latest published→`main`). This is the everyday "where do things stand" view: what
+  to paste now, and what's queued behind it. Present the two parts clearly separated — released
+  copy-boxes first (step 6), then a divider, then the preview section with its banner.
+- **`released`** (e.g. `/ja-changelog released` / `release`) → released only: the full workflow
+  below, paste-ready copy-boxes for the Doc. No preview section.
+- **`preview`** (e.g. `/ja-changelog preview` / `simulado` / `simulación`, optionally per-app) →
+  preview only, and it **runs the preflight gate**: it HALTS if any published release is still
+  missing from the Doc (see preview mode below). Use this when you specifically want only the
+  look-ahead and want to be stopped if the Doc is behind.
 
 **`preview` mode** answers *"what would the changelog say if we cut a release from the tip of each
 system right now?"* — i.e. the **merged-but-unreleased** backlog. It is an **internal planning view,
@@ -55,17 +71,19 @@ NOT for the client Doc**, and it **requires the Doc to already be current** — 
 release is still missing from the Doc, preview **halts** (see the preflight gate below) until you've
 documented it in `released` mode. Differences from the released workflow:
 
-- **Preflight gate — ALWAYS run this first, and STOP if the Doc isn't current.** Before computing
-  any preview, verify that every app you're about to preview has its **released** changelog fully in
-  the Doc. Do the released-mode scope check (step 1: last documented version per app from the Doc, vs
-  each app's **latest published release** — and for App JA, the **App Store live version** vs the
-  documented version). If **any** in-scope app has a published release (or, for App JA, a store-live
-  version) **newer than what the Doc documents**, **HALT — do not produce the preview at all.** List
-  the apps that are behind and their pending version(s), and tell the user to run `/ja-changelog`
-  (released mode) first, paste those entries into the Doc, then re-run `preview`. **Rationale:** a
-  preview of *unreleased* work is misleading and error-prone while already-*released* work is still
-  missing from the Doc — the Doc must be an accurate "released" baseline before you look ahead. Only
-  when the gate is clean for every in-scope app do you continue with the steps below.
+- **Preflight gate — for an explicit `preview` invocation, run this first and STOP if the Doc isn't
+  current.** (In the **default combined run** this gate is **skipped** — the released part is shown
+  right alongside, so just proceed.) Before computing a standalone preview, verify that every app you're
+  about to preview has its **released** changelog fully in the Doc. Do the released-mode scope check
+  (step 1: last documented version per app from the Doc, vs each app's **latest published release** —
+  and for App JA, the **App Store live version** vs the documented version). If **any** in-scope app
+  has a published release (or, for App JA, a store-live version) **newer than what the Doc
+  documents**, **HALT — do not produce the preview at all.** List the apps that are behind and their
+  pending version(s), and tell the user to run `/ja-changelog` (released mode) first, paste those
+  entries into the Doc, then re-run `preview`. **Rationale:** a standalone preview of *unreleased*
+  work is misleading and error-prone while already-*released* work is still missing from the Doc — the
+  Doc must be an accurate "released" baseline before you look ahead. Only when the gate is clean for
+  every in-scope app do you continue with the steps below.
 - **Scope (once the gate passes): skip the Doc for scope** and use commits, not release tags. The
   baseline per app is the **latest published release tag** (the collector reports it as
   `latestPublished`); the target is the **tip of the default branch**.
