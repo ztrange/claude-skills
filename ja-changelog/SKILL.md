@@ -67,9 +67,17 @@ everywhere — only **scope, collection, the App JA source, and the presentation
 
 **`preview` mode** answers *"what would the changelog say if we cut a release from the tip of each
 system right now?"* — i.e. the **merged-but-unreleased** backlog. It is an **internal planning view,
-NOT for the client Doc**, and it **requires the Doc to already be current** — if any published
-release is still missing from the Doc, preview **halts** (see the preflight gate below) until you've
-documented it in `released` mode. Differences from the released workflow:
+NOT for the client Doc.**
+
+**Core invariant — a preview ALWAYS covers only `latest published tag → tip of main`, never released
+work.** Released work is already in prod, so it is never part of a preview; whether or not it's
+documented in the Doc yet is **irrelevant to what the preview contains**. The preview section is
+therefore the same in the default combined run and in standalone `preview`. The Doc affects **only**
+the standalone gate below — a *reminder to paste pending release notes first*, not a change to the
+preview's scope. (This is why the default run can show the preview right below still-unpasted release
+notes: the two are disjoint — `documented → latest published`, then `latest published → main`.)
+
+Differences from the released workflow:
 
 - **Preflight gate — for an explicit `preview` invocation, run this first and STOP if the Doc isn't
   current.** (In the **default combined run** this gate is **skipped** — the released part is shown
@@ -84,9 +92,10 @@ documented it in `released` mode. Differences from the released workflow:
   work is misleading and error-prone while already-*released* work is still missing from the Doc — the
   Doc must be an accurate "released" baseline before you look ahead. Only when the gate is clean for
   every in-scope app do you continue with the steps below.
-- **Scope (once the gate passes): skip the Doc for scope** and use commits, not release tags. The
-  baseline per app is the **latest published release tag** (the collector reports it as
-  `latestPublished`); the target is the **tip of the default branch**.
+- **Scope — always `latest published tag → tip of main`** (per the invariant above; never depends on
+  the Doc). Use commits, not release tags: the baseline per app is the **latest published release
+  tag** (the collector reports it as `latestPublished`), and the target is the **tip of the default
+  branch**.
 - **Collect with `--preview`** instead of `--since`. Pull/fetch first, then:
   ```bash
   git -C <repo_path> fetch --all --tags --quiet
