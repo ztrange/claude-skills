@@ -51,11 +51,24 @@ in both modes — only **scope, collection, the App JA source, and the presentat
 
 **`preview` mode** answers *"what would the changelog say if we cut a release from the tip of each
 system right now?"* — i.e. the **merged-but-unreleased** backlog. It is an **internal planning view,
-NOT for the client Doc.** Differences from the released workflow:
+NOT for the client Doc**, and it **requires the Doc to already be current** — if any published
+release is still missing from the Doc, preview **halts** (see the preflight gate below) until you've
+documented it in `released` mode. Differences from the released workflow:
 
-- **Skip the Doc lookup entirely** (no step-1 scope from the Doc). The baseline per app is the
-  **latest published release tag** (the collector reports it as `latestPublished`); the target is the
-  **tip of the default branch**.
+- **Preflight gate — ALWAYS run this first, and STOP if the Doc isn't current.** Before computing
+  any preview, verify that every app you're about to preview has its **released** changelog fully in
+  the Doc. Do the released-mode scope check (step 1: last documented version per app from the Doc, vs
+  each app's **latest published release** — and for App JA, the **App Store live version** vs the
+  documented version). If **any** in-scope app has a published release (or, for App JA, a store-live
+  version) **newer than what the Doc documents**, **HALT — do not produce the preview at all.** List
+  the apps that are behind and their pending version(s), and tell the user to run `/ja-changelog`
+  (released mode) first, paste those entries into the Doc, then re-run `preview`. **Rationale:** a
+  preview of *unreleased* work is misleading and error-prone while already-*released* work is still
+  missing from the Doc — the Doc must be an accurate "released" baseline before you look ahead. Only
+  when the gate is clean for every in-scope app do you continue with the steps below.
+- **Scope (once the gate passes): skip the Doc for scope** and use commits, not release tags. The
+  baseline per app is the **latest published release tag** (the collector reports it as
+  `latestPublished`); the target is the **tip of the default branch**.
 - **Collect with `--preview`** instead of `--since`. Pull/fetch first, then:
   ```bash
   git -C <repo_path> fetch --all --tags --quiet
