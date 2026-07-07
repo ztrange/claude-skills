@@ -10,7 +10,10 @@ description: >-
   by version, matching the client's changelog Google Doc. Use this whenever the user asks to
   "generate a changelog", "update the changelog", "write release notes", "what shipped" / "qué se
   liberó", or to summarize recent releases for the client/customer for any of these apps — including
-  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all.
+  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all. Also
+  supports a `preview` mode (invoke with "preview" / "simulado", e.g. "/ja-changelog preview") that
+  simulates the changelog for the merged-but-unreleased work at the tip of each system — an internal
+  "what would ship if we released now" view, not for the client Doc.
 ---
 
 # Jalisco Alerta — Changelog Generator
@@ -36,6 +39,51 @@ Process whichever apps the user asked for; default to all (admin apps + App JA).
 
 The three GitHub apps use the workflow below. **App JA is different** — its release notes come from
 Slack, not GitHub — see "App JA (mobile app)" near the end.
+
+## Two modes: `released` (default) and `preview`
+
+This skill runs in one of two modes. **Default is `released`** — the full workflow below, producing
+paste-ready copy-boxes for the client Doc. If the invocation includes the word **`preview`** (or
+`simulado` / `simulación`) — e.g. `/ja-changelog preview` or `/ja-changelog preview gabinete` — run
+in **`preview` mode** instead. Everything about *interpreting* changes, the ClickUp cross-check, the
+Spanish voice/style, and the "one bullet per change / nested sub-bullets" formatting is **identical**
+in both modes — only **scope, collection, the App JA source, and the presentation** differ.
+
+**`preview` mode** answers *"what would the changelog say if we cut a release from the tip of each
+system right now?"* — i.e. the **merged-but-unreleased** backlog. It is an **internal planning view,
+NOT for the client Doc.** Differences from the released workflow:
+
+- **Skip the Doc lookup entirely** (no step-1 scope from the Doc). The baseline per app is the
+  **latest published release tag** (the collector reports it as `latestPublished`); the target is the
+  **tip of the default branch**.
+- **Collect with `--preview`** instead of `--since`. Pull/fetch first, then:
+  ```bash
+  git -C <repo_path> fetch --all --tags --quiet
+  python3 scripts/collect_app_changes.py <repo_path> --preview
+  ```
+  It emits **one** pseudo-release with `compareRange` = `<latestPublishedTag>..<defaultBranchHEAD>`,
+  plus `unreleasedCommitCount`, `head`, and `headSha`. Pass `--since vX.Y.Z` to override the baseline
+  or `--head <ref>` to override the tip. gh-API fallback if local git can't reach the tip:
+  `gh api repos/<repo>/compare/<latestPublishedTag>...<defaultBranch>`.
+- **Include everything — flagged-off and still-pending work too — but label it inline.** The whole
+  point of a preview is to reveal what's cooking, so do **not** apply the released-mode exclusions.
+  Tag any bullet that isn't client-live yet, e.g. append `— (pendiente: tras bandera de
+  funcionalidad)` or `— (pendiente: tarea en revisión)`. Still fold pure internal/CI work into the
+  one internal line.
+- **App JA in preview** has no Slack store-text or App Store release for unreleased work, so derive
+  its bullets **from commits** (the "no store text" path): baseline = the current **App Store** live
+  version, target = tip of `main`; diff via
+  `gh api repos/erliamx/erlia-app/compare/<liveVersionRef>...<defaultBranch>`. Mark them provisional.
+  The ` - Pendiente` / App-Store-gating rules do **not** apply in preview (nothing is released).
+- **Presentation is different: do NOT use the Doc copy-boxes and do NOT imply it's paste-ready.**
+  Lead with a loud banner — **`🔮 SIMULACIÓN / PREVIEW — cambios aún NO publicados. No pegar en el
+  Doc del cliente.`** — then present each app's changes as a normal readable draft (headings +
+  bullets) under a placeholder heading like `Próxima versión (preview) — desde vX.Y.Z` (no real tag
+  or date exists yet; show the baseline). Report `unreleasedCommitCount` per app so the user sees how
+  much is queued.
+
+The rest of this document describes **`released` mode**. In `preview` mode, reuse steps 3–5
+(interpret / ClickUp / write) verbatim and swap in the four differences above.
 
 ## Workflow
 

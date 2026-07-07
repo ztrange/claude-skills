@@ -6,8 +6,10 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
 ## Skills
 
 - **`ja-changelog/`** — generates client-facing Spanish release changelogs for the Jalisco Alerta
-  apps (EDL, SIGEM, Gabinete): pulls the repos, reads published GitHub releases, cross-checks
-  ClickUp, and writes value-oriented notes matching the client changelog Google Doc.
+  apps (EDL, SIGEM, Gabinete, App JA): pulls the repos, reads published GitHub releases, cross-checks
+  ClickUp, and writes value-oriented notes matching the client changelog Google Doc. Runs in
+  `released` mode (default) or `preview` mode (`/ja-changelog preview`) — the latter simulates the
+  changelog for the merged-but-unreleased work at the tip of each system.
 
 ## Use in Claude Code (live, no rebuild)
 
