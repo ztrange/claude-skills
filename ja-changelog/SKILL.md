@@ -257,6 +257,13 @@ Doc, not by Markdown). The user pastes manually, so:
      lines / delete the tabs — which the user prefers over multiple copy-paste cycles per level.
      (Emit an actual tab byte in the code block, not the literal characters "\t" and not spaces.)
 - Group these under a plain-text label per app (`# Codename` / `# Full Name`), versions newest-first.
+  **Prefix the app label with 🚀 when that app has pending changes to add to the Doc** — i.e. it has
+  a published release newer than what the Doc documents (the entries you're presenting for pasting).
+  Apps with nothing pending get **no** emoji. (So a heading reads `🚀 SIGEM / Sistema de Gestión de
+  Emergencias` only when SIGEM has release notes waiting to be pasted; `EDL / Earth Data Lab` with no
+  emoji means EDL is already up to date.) This 🚀 marks the **released** (to-paste) sections only — in
+  a default combined run it does not go on the preview section's labels, since preview work isn't
+  "pending for the Doc."
 - Surface any discrepancies from step 4 and any releases you intentionally skipped (as normal text,
   outside the copy boxes).
 
