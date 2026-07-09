@@ -174,8 +174,13 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    - `prepend` under the **product-header** id →
      `**Meses:** ` + each month as `[Mes Año](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<monthId>)` joined by ` · `.
    - `prepend` under **each month-header** id → `[↑ Arriba](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<productHeaderId>)`.
-7. Optionally post a one-line notice in `#ja-changelog` (`slack_send_message`, channel `C0BGNRZ3480`),
-   e.g. `🚀 SIGEM v1.130.4 publicado`.
+7. **Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel
+   `C0BGNRZ3480`) after writing the canvas(es) — canvas edits are **silent**, so this is how the team
+   learns a release shipped. Never skip it, and never thread it (always top-level). One line **per
+   app**, linking to that app's canvas:
+   `🚀 **SIGEM** — nueva versión **v1.130.4** publicada · [ver changelog](https://erlia.slack.com/docs/T099H5TTQE8/F0BFNUBFD6X)`
+   If **several apps** shipped in the same run, **combine them into ONE message**, one such line per
+   app (don't send several separate messages).
 
 Steps 5–6 return very large payloads — run them in a **subagent** so they stay out of your context,
 and restate the "never `replace` with a `section_id`" rule to it. `preview` mode never writes to a
