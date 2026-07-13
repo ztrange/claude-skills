@@ -1,8 +1,14 @@
-# Changelog style guide (Spanish, client-facing)
+# Changelog style guide (Spanish, internal stakeholders)
 
-This format is derived from the client's existing changelog Google Doc — **match it exactly**.
-When in doubt, open the Doc (see SKILL.md for the id) and imitate the most recent real entries
-for that same app.
+**Audience:** internal Jalisco Alerta stakeholders who **know the project deeply** (one is the
+Product Owner) — non-developers, but not the general public. Write **precise and specific** bullets
+that name the actual modules/screens/features, don't over-simplify, and don't hide technical work.
+See SKILL.md's audience note at the top.
+
+This format is derived from the existing changelog (now the per-app Slack canvases; the Google Doc is
+legacy). **Match the most recent real entries for that same app.** The only additions layered on top
+of the historical entries are: (1) a **category emoji** prefixing every bullet, and (2) treating
+**standalone technical changes** as first-class ⚙️ entries (both described below).
 
 ## Where each app lives in the Doc
 
@@ -18,9 +24,11 @@ a codename and a full name. Append new versions at the **top** of the app's sect
 
 ```markdown
 ## vX.Y.Z (D mmmm aaaa)
-- <cambio en lenguaje claro>
-- <cambio en lenguaje claro>
+- <emoji> <cambio en lenguaje claro>
+- <emoji> <cambio en lenguaje claro>
 ```
+
+Each bullet is prefixed with a **category emoji** (legend below) + a space, before the "Se…".
 
 - Heading: `## ` + version tag + ` (` + date + `)`. Keep the real tag (e.g. `v2.268.0`).
 - **Date format: `18 junio 2026`** — day number, a space, the Spanish month in **lowercase**,
@@ -49,61 +57,79 @@ a codename and a full name. Append new versions at the **top** of the app's sect
 
 ## Voice: impersonal "Se…", value first
 
-The Doc's bullets are full sentences in impersonal Spanish, overwhelmingly starting with **"Se "**:
+The bullets are full sentences in impersonal Spanish, overwhelmingly starting with **"Se "**. Each is
+prefixed by one **category emoji**:
 
-- Features: `Se agrega…`, `Se incorpora…`, `Se habilita…`, or a noun phrase (`Nuevo filtro…`,
-  `Mapa de pronóstico del tiempo`).
-- Improvements: `Se mejora…`, `Se ajusta…`, `Se optimiza…`.
-- Bug fixes: `Se corrige el error que causaba que…` / `Se corrige el defecto que provocaba que…`.
+| Emoji | Category | Frame |
+|-------|----------|-------|
+| ✨ | **Nueva funcionalidad** — genuinely new capability | `Se agrega…`, `Se incorpora…`, `Se habilita…`, or a noun phrase (`Nuevo filtro…`) |
+| 🔧 | **Mejora o cambio** to something existing | `Se mejora…`, `Se cambia…`, `Se ajusta…`, `Se optimiza…` |
+| 🐛 | **Corrección** (bug fix) | `Se corrige el error que causaba que…` / `Se corrige el defecto que provocaba que…` |
+| ⚙️ | **Técnico** — standalone endpoint/refactor/component/infra change not covered by another entry | `Se agrega el endpoint…`, `Se refactoriza…`, `Se reestructura…` |
 
-Lead with the capability or benefit for the client (Gobierno de Jalisco), not the implementation.
-Keep it concrete but readable. Avoid in the final text: PR numbers, branch names, commit hashes,
+Pick the emoji by what the change *is*, not by its wording: a reworked existing screen is 🔧, not ✨;
+reserve ✨ for genuinely new capabilities (Added files / new screen-module-endpoint). On a parent
+bullet with nested sub-bullets, the emoji goes on the **parent only**.
+
+Lead with what changed, and be specific — you may name the concrete module/screen/feature since the
+audience knows the project. Avoid in the final text: PR numbers, branch names, commit hashes,
 file paths, table names, and the internal ticket prefixes (MON:, COM:, VEH:, INCID:…).
 
 ## Internal / technical changes
 
-The Doc does include developer-facing items, but per the team's preference keep them **condensed
-into a single short sentence at the end** of the version rather than itemizing each one — and
-without a comma-list of the internal items, e.g.:
+Technical work is legitimate content — the audience understands the project. Give each **noteworthy,
+standalone** technical change its own clear **⚙️** bullet (a new endpoint, a refactor, a component or
+infra enhancement). **Do not** bundle them into one generic "Se realizan diversas mejoras técnicas e
+internas…" line — that was the old rule; retire it.
 
-`- Se realizan diversas mejoras técnicas e internas para sostener las nuevas funciones.`
+Two limits keep it from becoming a git log:
 
-Only break internal work into its own bullet if an item has real client impact (e.g. a rollback
-capability the client asked for). Pure CI bumps, lint, tests, and dependency upgrades fold into
-that one line or are omitted.
+1. **Only what isn't already covered.** A ⚙️ bullet earns its place only if the change isn't already
+   represented by another entry. If it's the plumbing behind a ✨/🔧/🐛 item you're already listing
+   (e.g. the endpoint that powers a feature bullet), **omit it** — it's redundant.
+2. **Trivia still drops.** Pure CI/pipeline bumps, dependency upgrades, lint/formatting, and
+   test-only changes are omitted, or at most collapsed into a **single** short ⚙️ line — never a
+   comma-enumeration.
 
-## Before / after (raw change → Doc-style bullet)
+Write ⚙️ bullets clearly, not cryptically: `⚙️ Se agrega el endpoint de vista web para compartir
+notificaciones` beats `⚙️ Nuevo handler de webview`.
 
-**Example 1 — feature**
+## Before / after (raw change → changelog bullet)
+
+**Example 1 — ✨ new feature**
 Input (PR title): `MON: Lista de riesgos detectados`
-Output: `- Se agrega una lista de riesgos detectados en el monitor, para identificar de un vistazo las zonas que requieren atención.`
+Output: `- ✨ Se agrega una lista de riesgos detectados en el monitor, para identificar de un vistazo las zonas que requieren atención.`
 
-**Example 2 — performance made client-relevant**
+**Example 2 — 🔧 improvement (performance made concrete)**
 Input (PR title): `COM: Optimizar uso de grid al mandar notificaciones`
-Output: `- Se mejora la velocidad y confiabilidad del envío de notificaciones, especialmente al alertar zonas extensas.`
+Output: `- 🔧 Se mejora la velocidad y confiabilidad del envío de notificaciones, especialmente al alertar zonas extensas.`
 
-**Example 3 — bug fix (use the "Se corrige el error que causaba que…" frame)**
+**Example 3 — 🐛 bug fix (use the "Se corrige el error que causaba que…" frame)**
 Input: `MON, COM: Al retroceder en el tiempo, casi todas las estaciones salen desconectadas`
-Output: `- Se corrige el error que causaba que, al consultar momentos anteriores en el histórico, casi todas las estaciones aparecieran como desconectadas.`
+Output: `- 🐛 Se corrige el error que causaba que, al consultar momentos anteriores en el histórico, casi todas las estaciones aparecieran como desconectadas.`
 
-**Example 4 — feature with client framing from ClickUp**
+**Example 4 — ✨ feature with framing from ClickUp**
 Input: `feat: rating notifications` (+ ClickUp "COM: Endpoint para contabilizar calificación de notificaciones")
-Output: `- Se agrega la posibilidad de que la ciudadanía califique las notificaciones recibidas, y se contabilizan esas calificaciones para medir su utilidad.`
+Output: `- ✨ Se agrega la posibilidad de que la ciudadanía califique las notificaciones recibidas, y se contabilizan esas calificaciones para medir su utilidad.`
+Note: the "Endpoint para contabilizar…" is the plumbing behind this feature — it does **not** get its
+own ⚙️ bullet, because it's already represented here.
 
-**Example 5 — SIGEM domain**
+**Example 5 — 🔧 change to existing behavior (SIGEM domain)**
 Input: `VEH: Excluir kilometraje y prox mtto, de vehículos de tipo incompatible`
-Output: `- Se omiten el kilometraje y el próximo mantenimiento en los vehículos de tipo incompatible, evitando datos que no aplican y posibles confusiones.`
+Output: `- 🔧 Se omiten el kilometraje y el próximo mantenimiento en los vehículos de tipo incompatible, evitando datos que no aplican y posibles confusiones.`
 
-**Example 6 — collapse internal work (one sentence, no comma-list)**
-Input: `feat: github actions - latest versions`, `fix: add new indexes`, `fix: metadata columns`
-Output: `- Se realizan diversas mejoras técnicas e internas para sostener las nuevas funciones.`
+**Example 6 — ⚙️ standalone technical change (not covered by any other entry)**
+Input: `feat: add notification web view endpoint with SIGEM preview proxy and cache` (no user-facing entry lists it)
+Output: `- ⚙️ Se agrega un endpoint de vista web para notificaciones, que permite mostrar la vista previa al compartir enlaces en WhatsApp y Telegram.`
+Contrast: pure trivia (`chore: bump github actions`, `fix: add new indexes`, lint) is **omitted**, or
+at most one short `- ⚙️ Se realizan ajustes técnicos internos.` — never a comma-list.
 
-**Example 7 — split a comma enumeration into nested sub-bullets**
+**Example 7 — split a comma enumeration into nested sub-bullets (emoji on the parent only)**
 Input (PRs): `INSP MOVIL: Listado de inspecciones`, `INSP MOVIL: Detalle inspección`, `INSP MOVIL: Estatus y reportes`, `INSP MOVIL: Crear / editar visita`
-Bad (one comma-joined bullet): `- Se agrega inspecciones móvil: listado, detalle, estatus y reportes, y crear/editar visitas.`
+Bad (one comma-joined bullet): `- ✨ Se agrega inspecciones móvil: listado, detalle, estatus y reportes, y crear/editar visitas.`
 Good:
 ```markdown
-- Se agrega una experiencia de inspecciones optimizada para celular:
+- ✨ Se agrega una experiencia de inspecciones optimizada para celular:
     - Listado de inspecciones
     - Detalle de inspección
     - Estatus y reportes de inspección
@@ -113,49 +139,53 @@ Good:
 ## App Jalisco Alerta (mobile app) — elevate the tone
 
 The source is the developer's Slack store-text (see SKILL.md "App JA"), written for **end users**
-("Ahora puedes…, disfruta…, para ti"). Our Doc's audience is **non-technical product stakeholders**,
-so App JA uses the **same formal, impersonal register as the admin apps** — elevate the tone,
-don't copy the end-user marketing voice. Headings/date format are the same as the rest of the Doc
-(`## vX.Y.Z (D mmmm aaaa)`), optional ` - Solo Android` / ` - Solo iOS` suffix if platform-specific.
+("Ahora puedes…, disfruta…, para ti"). Our audience is the **internal project stakeholders** (they
+know the project; one is the Product Owner), so App JA uses the **same formal, impersonal register and
+category emojis as the admin apps** — elevate the tone, don't copy the end-user marketing voice.
+Headings/date format are the same (`## vX.Y.Z (D mmmm aaaa)`), optional ` - Solo Android` / ` - Solo
+iOS` suffix if platform-specific. App JA store text rarely surfaces standalone ⚙️ technical items, so
+its bullets are usually ✨/🔧/🐛.
 
-**Example A — Slack store-text (end-user tone) → stakeholder bullets (formal)**
+**Example A — Slack store-text (end-user tone) → stakeholder bullets (formal, with emojis)**
 Input (Slack):
 > "Ahora puedes calificar las alertas que recibes y enviarnos comentarios o sugerencias directamente
 > desde la app. También renovamos el contenido del módulo del Mundial 2026 y mejoramos el mapa.
 > Además, ampliamos el contenido en todos los idiomas e incluimos mejoras de rendimiento."
 Output (elevated register):
 ```markdown
-- Se agrega la posibilidad de calificar las alertas recibidas.
-- Se agrega el envío de comentarios o sugerencias directamente desde la aplicación.
-- Se renueva el contenido del módulo del Mundial 2026 con una experiencia más interactiva.
-- Se mejora el mapa para facilitar la visualización del pronóstico del tiempo y de la información.
-- Se amplía el contenido disponible en todos los idiomas compatibles.
-- Se realizan mejoras generales de rendimiento y estabilidad.
+- ✨ Se agrega la posibilidad de calificar las alertas recibidas.
+- ✨ Se agrega el envío de comentarios o sugerencias directamente desde la aplicación.
+- 🔧 Se renueva el contenido del módulo del Mundial 2026 con una experiencia más interactiva.
+- 🔧 Se mejora el mapa para facilitar la visualización del pronóstico del tiempo y de la información.
+- 🔧 Se amplía el contenido disponible en todos los idiomas compatibles.
+- 🔧 Se realizan mejoras generales de rendimiento y estabilidad.
 ```
-Note the elevation: Slack "Ahora puedes calificar…" → "Se agrega la posibilidad de calificar…".
+Note the elevation: Slack "Ahora puedes calificar…" → "✨ Se agrega la posibilidad de calificar…".
 
-**Example B — enumeration → nested sub-bullets (real Doc pattern)**
+**Example B — enumeration → nested sub-bullets (emoji on the parent only)**
 ```markdown
-- Se incorpora un nuevo módulo sobre el sismo en Venezuela:
+- ✨ Se incorpora un nuevo módulo sobre el sismo en Venezuela:
     - Descripción de lo ocurrido
     - Recomendaciones útiles
     - Enlaces oficiales para brindar apoyo
 ```
 
-So the whole Doc reads in one consistent formal register — admin apps and App JA alike use
-`Se agrega… / Se incorpora… / Se mejora… / Se corrige el error que causaba que…`.
+So the whole changelog reads in one consistent formal register — admin apps and App JA alike use
+`✨/🔧/🐛/⚙️` + `Se agrega… / Se incorpora… / Se mejora… / Se cambia… / Se corrige el error que causaba que…`.
 
 ## Common pitfalls
 
-- Don't list every commit — a release with 12 commits often maps to 3–5 client bullets.
-- **Don't default to "Se agrega."** Distinguish a *new* thing from a *change* to an existing one. If
-  every changed file is `Modified` (none `Added`), or the ClickUp task's verb is `Cambiar/Migrar/
-  Ajustar`, it's a change → `Se cambia/Se mejora…`, never `Se agrega una vista/función…`. Reserve
-  `Se agrega/Se incorpora…` for genuinely new capabilities (new screen/module/endpoint = `Added`
-  files). E.g. `MON: Cambiar fuente de datos para riesgos detectados` → "Se cambia la fuente de datos
-  del monitor para usar los riesgos registrados", NOT "Se agrega la vista de riesgos registrados".
-- Don't invent benefits. If a change's client value is unclear, inspect the diff or the ClickUp
-  task; if still unclear, fold it into the internal-improvements line rather than guessing.
+- Don't list every commit — a release with 12 commits often maps to 3–5 bullets.
+- **Don't default to "Se agrega." / ✨.** Distinguish a *new* thing from a *change* to an existing
+  one. If every changed file is `Modified` (none `Added`), or the ClickUp task's verb is `Cambiar/
+  Migrar/Ajustar`, it's a change → 🔧 `Se cambia/Se mejora…`, never ✨ `Se agrega una vista/función…`.
+  Reserve ✨ `Se agrega/Se incorpora…` for genuinely new capabilities (new screen/module/endpoint =
+  `Added` files). E.g. `MON: Cambiar fuente de datos para riesgos detectados` → "🔧 Se cambia la
+  fuente de datos del monitor para usar los riesgos registrados", NOT "✨ Se agrega la vista…".
+- **Don't repeat covered work as a ⚙️ bullet.** A technical change that's just the plumbing behind a
+  ✨/🔧/🐛 entry you already wrote does not get its own ⚙️ line — only *standalone* technical changes do.
+- Don't invent benefits. If a change's value is unclear, inspect the diff or the ClickUp task; if
+  still unclear, ask the user rather than guessing.
 - Don't translate commit messages literally — translate the *intent*.
-- Mirror the Doc's exact date format and "Se…" phrasing; a mismatched style is a tell that it
-  wasn't written by the team.
+- Mirror the exact date format and "Se…" phrasing, and put exactly one category emoji at the start of
+  each bullet; a mismatched style is a tell that it wasn't written by the team.

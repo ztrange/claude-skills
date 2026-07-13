@@ -19,9 +19,15 @@ description: >-
 
 # Jalisco Alerta — Changelog Generator
 
-Produce a **client-facing changelog in Spanish** that communicates the *value delivered* to
-the client (Gobierno de Jalisco), not a raw git log. The audience is non-technical
-stakeholders: each bullet should answer "what can the client now do, or what got better?"
+Produce a **changelog in Spanish** that communicates what shipped, not a raw git log.
+
+**Audience — internal stakeholders who know the project deeply.** These are *not* the general public.
+They are internal users of the Jalisco Alerta project (one of them is the **Product Owner**) who
+understand the system, its modules, and its features well. So: they're non-developers, but you can be
+**precise and specific** — name the modules/features/screens, don't over-simplify, and don't hide
+technical work. Each bullet should answer "what changed, concretely?" — a new capability, an
+improvement, a fix, or a noteworthy technical change. Write for someone who follows the project, not
+someone hearing about it for the first time.
 
 The output is a **draft for the user to review and paste** into the changelog Google Doc.
 Do not write to the Doc directly — the Doc is read-only style/scope reference.
@@ -191,11 +197,13 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    ```
    🚀 **EDL** — nueva versión **v2.287.1** publicada
 
-   • Se agrega el historial de las últimas 24 horas en la vista de detalle de un riesgo…
-   • Se cambia la fuente de datos del monitor de riesgos para mostrar los riesgos registrados…
+   • ✨ Se agrega el historial de las últimas 24 horas en la vista de detalle de un riesgo…
+   • 🔧 Se cambia la fuente de datos del monitor de riesgos para mostrar los riesgos registrados…
+   • ⚙️ Se agrega el endpoint de vista web para compartir notificaciones en WhatsApp/Telegram.
    ```
-   (This `slack_send_message` integration renders standard `**bold**`; use it for the app name and
-   version, as the working notices do.)
+   The bullets are a verbatim copy of what you wrote to the canvas for that version, **including the
+   category emoji** (✨/🔧/🐛/⚙️). (This `slack_send_message` integration renders standard `**bold**`;
+   use it for the app name and version, as the working notices do.)
    If **several apps** shipped in the same run, **combine them into ONE message**, one such per-app
    block separated by a blank line (don't send several separate messages).
 
@@ -268,9 +276,18 @@ datos para riesgos detectados` (all files modified) → "Se cambia la fuente de 
 usar los riesgos registrados", **not** "Se agrega una vista de riesgos". Use `Se cambia/Se mejora…`
 for changes, `Se agrega/Se incorpora…` only for genuinely new capabilities.
 
-Filter out noise the client doesn't care about: pure CI/pipeline bumps, dependency upgrades,
-lint/formatting, test-only changes, infra refactors with no user-visible effect. Tech-debt and
-internal items belong at most in a brief "técnico/interno" note, not as headline value.
+**Technical changes are welcome — as their own entries, not bundled.** The audience understands the
+project, so a new endpoint, a refactor, a component enhancement, or an infra change is legitimate
+changelog content when it carries information. Give each such change its own **⚙️ técnico** bullet,
+written clearly (see step 5's emoji legend) — do NOT sweep them all into one generic "mejoras
+técnicas internas" line. **But do not mention every technical change: include a ⚙️ bullet only when
+the change is not already represented by another entry.** If a technical change is just the plumbing
+behind a feature/fix you're already listing (e.g. the endpoint that powers a ✨ feature bullet),
+**omit it** — it's redundant. What earns a ⚙️ bullet is a *standalone* technical change with no
+user-facing entry of its own (a refactor, an internal component improvement, a new endpoint used
+elsewhere). Genuine noise still drops entirely: pure CI/pipeline bumps, dependency upgrades,
+lint/formatting, and test-only changes — omit these or, at most, collapse the trivial leftovers into
+one short ⚙️ line.
 
 **Default to including shipped work.** It was built because the team wants it live — so do **not**
 drop a change just because it looks out-of-domain, unfamiliar, or like it "doesn't belong" to this
@@ -279,7 +296,9 @@ app. The exceptions are narrow:
   (look for PRs like "hide … in production via feature flag") or its ClickUp task is still open
   (not done/ready), **don't mention it until it's live for the client**. Note it as excluded so the
   user knows it's pending, not lost.
-- **Pure internal/technical** items with no user-visible effect fold into the brief internal line.
+- **Standalone technical items** (refactors, new endpoints, component/infra changes) get their own
+  **⚙️ técnico** bullet — *unless* they're already covered by another entry, in which case omit them
+  (see the technical-changes rule above). Only true noise (CI/lint/deps/tests) is dropped or collapsed.
 
 When you're **genuinely unsure** whether something is client-facing, where it belongs, or whether to
 include it, **ask the user — don't silently exclude it.** And if any change looks **malicious or
@@ -311,8 +330,20 @@ Group **by app, then by version (newest first)**. Match the existing Google Doc 
   (lowest–highest, e.g. `v0.38.2-v0.38.3 (25 junio 2026)`) and list all their bullets together.
   Different days = separate entries. See `references/changelog-style.md`.
 - **Flat bullet list** per version — no themed subsections.
-- Spanish, impersonal, value-first: bullets start with **"Se agrega…/Se mejora…/Se corrige el
-  error que causaba que…"**. Lead with the benefit, not the implementation.
+- Spanish, impersonal, specific: bullets start with **"Se agrega…/Se mejora…/Se cambia…/Se corrige el
+  error que causaba que…"**. Lead with what changed; you may name the concrete module/screen/feature
+  since the audience knows the project (see the audience note at the top).
+- **Prefix every bullet with a category emoji** (one leading emoji + a space, before the "Se…"):
+  - **✨ Nueva funcionalidad** — a genuinely new capability (`Se agrega/Se incorpora/Se habilita…`).
+  - **🔧 Mejora o cambio** — a change/improvement to something that already exists (`Se mejora/Se
+    cambia/Se ajusta/Se optimiza…`).
+  - **🐛 Corrección** — a bug fix (`Se corrige el error que causaba que…`).
+  - **⚙️ Técnico** — a standalone technical change (endpoint, refactor, component/infra enhancement)
+    that isn't already represented by another entry (see step 3's technical-changes rule).
+  On a parent bullet with nested sub-bullets, put the emoji on the **parent only**; sub-bullets have
+  none. Pick the emoji by what the change *is*, not by wording — a reworded existing screen is 🔧, not
+  ✨. When unsure between ✨ and 🔧, use the step-3 "new thing vs change to existing" test (Added files
+  / `Cambiar` task verb → 🔧).
 - **One bullet per distinct change.** Never pack several distinct changes into a single bullet
   joined by commas — that breaks the Doc's convention. If a single feature has several sub-parts
   worth listing (e.g. a new module with multiple screens), use a parent bullet ending in `:` with
@@ -320,9 +351,12 @@ Group **by app, then by version (newest first)**. Match the existing Google Doc 
   not as a way to enumerate separate items.
 - Merge several commits into one bullet only when they're genuinely one change.
 - No PR numbers, branch names, or English commit jargon in the body.
-- Condense internal/CI/tech-debt work into a **single closing bullet** ("Se realizan diversas
-  mejoras técnicas e internas para sostener las nuevas funciones."), or omit if trivial. Keep it
-  as one short sentence — don't enumerate the internal items with commas.
+- **Technical work → individual ⚙️ bullets, not one generic line.** Surface each *noteworthy,
+  standalone* technical change (endpoint, refactor, component/infra enhancement) as its own clear ⚙️
+  bullet — but only when it isn't already conveyed by another entry (omit the plumbing behind a
+  feature you already listed). Do NOT default to the old catch-all "Se realizan diversas mejoras
+  técnicas e internas…" line for everything. Genuine trivia (CI/lint/deps/tests) is dropped, or at
+  most collapsed into a single short ⚙️ line — never a comma-enumeration.
 
 ### 6. Publish (canvas) or present (legacy/preview)
 
@@ -455,16 +489,19 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
 
 ### Reformat — elevate the tone for product stakeholders
 The Slack source is written for **end users** ("Ahora puedes…", "disfruta…", "para ti", "tu
-experiencia"). But our changelog's audience is **non-technical product stakeholders**, so use the
-**same slightly-more-formal, impersonal register as the admin-app sections** — don't carry over the
-end-user marketing voice. Convert the prose into Doc-style bullets:
-- Use **impersonal, value-oriented phrasing**: "Se agrega… / Se incorpora… / Se mejora… / Se corrige
-  el error que causaba que…". **Drop** "Ahora puedes…", "disfruta…", "para ti", "tu experiencia".
-- Stay readable and non-technical (not engineering jargon) — just more formal than the Slack text.
-  E.g. Slack "Ahora puedes calificar las alertas que recibes" → "Se agrega la posibilidad de calificar
-  las alertas recibidas".
+experiencia"). But our changelog's audience is the **internal project stakeholders** described in the
+audience note at the top (they know the project; one is the Product Owner), so use the **same formal,
+impersonal register as the admin-app sections** — don't carry over the end-user marketing voice.
+Convert the prose into changelog bullets:
+- Use **impersonal, specific phrasing**: "Se agrega… / Se incorpora… / Se mejora… / Se corrige el
+  error que causaba que…". **Drop** "Ahora puedes…", "disfruta…", "para ti", "tu experiencia".
+- Keep it readable (not raw engineering jargon), just more formal than the Slack text. E.g. Slack
+  "Ahora puedes calificar las alertas que recibes" → "Se agrega la posibilidad de calificar las
+  alertas recibidas".
+- **Prefix each bullet with the category emoji** (✨/🔧/🐛/⚙️), same legend as the admin apps (step 5).
+  App JA's store text rarely surfaces standalone ⚙️ technical items, so it's usually ✨/🔧/🐛.
 - One bullet per distinct change; nested sub-bullets for enumerations (e.g. the Mundial content
-  list — parent bullet ending in `:` then indented sub-bullets).
+  list — parent bullet ending in `:` then indented sub-bullets, emoji on the parent only).
 - Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` only if the version is
   platform-specific. Use the production-deploy date; the announcement date is a placeholder. If the
   version is announced but not yet deployed to prod, append ` - Pendiente` and use the announcement
