@@ -181,11 +181,23 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    `C0BGNRZ3480`) after writing the canvas(es) — canvas edits are **silent**, so this is how the team
    learns a release shipped. **This is standing, durable authorization from the user: send it
    automatically as part of publishing a release — do NOT ask for confirmation first, do not treat it
-   as optional.** Never skip it, and never thread it (always top-level). One line **per
-   app**, linking to that app's canvas:
-   `🚀 **SIGEM** — nueva versión **v1.130.4** publicada · [ver changelog](https://erlia.slack.com/docs/T099H5TTQE8/F0BFNUBFD6X)`
-   If **several apps** shipped in the same run, **combine them into ONE message**, one such line per
-   app (don't send several separate messages).
+   as optional.** Never skip it, and never thread it (always top-level).
+   **Message content — paste a COPY of the release's changelog bullets, and do NOT link the canvas.**
+   A bare canvas URL makes Slack render a big preview card that wastes space and is awkward to use, so
+   **omit the link entirely** — paste the just-published version's bullets inline so the team reads
+   what shipped without leaving the channel. The canvas holds the full history for anyone who wants
+   the older entries. Format per app (heading line, blank line, then the bullets exactly as written to
+   the canvas for that version, keeping any nested sub-bullets indented):
+   ```
+   🚀 **EDL** — nueva versión **v2.287.1** publicada
+
+   • Se agrega el historial de las últimas 24 horas en la vista de detalle de un riesgo…
+   • Se cambia la fuente de datos del monitor de riesgos para mostrar los riesgos registrados…
+   ```
+   (This `slack_send_message` integration renders standard `**bold**`; use it for the app name and
+   version, as the working notices do.)
+   If **several apps** shipped in the same run, **combine them into ONE message**, one such per-app
+   block separated by a blank line (don't send several separate messages).
 
 Steps 5–6 return very large payloads — run them in a **subagent** so they stay out of your context,
 and restate the "never `replace` with a `section_id`" rule to it. `preview` mode never writes to a
