@@ -166,7 +166,10 @@ neither can be edited surgically — so rebuild the whole canvas each time:
 2. `python3 scripts/render_canvas.py --extract < dump.md > flat.md` — strips the index / `↑ Arriba` /
    `## Mes` headers back to a flat `## vX.Y.Z (fecha)` entry list.
 3. Put the **new** `## vX.Y.Z (D mes AAAA)` + bullets at the **TOP** of `flat.md`.
-4. `python3 scripts/render_canvas.py --product "<product header>" < flat.md > body.md` — regroups by month.
+4. `python3 scripts/render_canvas.py --product "<product name>" < flat.md > body.md` — regroups by month.
+   **Pass the product name WITHOUT the leading `# `** (e.g. `--product "App Jalisco Alerta"`, not
+   `"# App Jalisco Alerta"`): the script prepends `# ` itself, so passing the `#` yields a broken
+   double-hash header `# # …` that then breaks the step-6 product-header id match.
 5. `slack_update_canvas` action=`replace`, **no** `section_id`, content = `body.md` (full overwrite;
    clears the old index/links too).
 6. `slack_read_canvas <id>` → from `section_id_mapping` take the product-header id and every
@@ -176,7 +179,9 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    - `prepend` under **each month-header** id → `[↑ Arriba](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<productHeaderId>)`.
 7. **Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel
    `C0BGNRZ3480`) after writing the canvas(es) — canvas edits are **silent**, so this is how the team
-   learns a release shipped. Never skip it, and never thread it (always top-level). One line **per
+   learns a release shipped. **This is standing, durable authorization from the user: send it
+   automatically as part of publishing a release — do NOT ask for confirmation first, do not treat it
+   as optional.** Never skip it, and never thread it (always top-level). One line **per
    app**, linking to that app's canvas:
    `🚀 **SIGEM** — nueva versión **v1.130.4** publicada · [ver changelog](https://erlia.slack.com/docs/T099H5TTQE8/F0BFNUBFD6X)`
    If **several apps** shipped in the same run, **combine them into ONE message**, one such line per
