@@ -55,8 +55,10 @@ in the invocation. Everything about *interpreting* changes, the ClickUp cross-ch
 voice/style, and the "one bullet per change / nested sub-bullets" formatting is **identical**
 everywhere — only **scope, collection, the App JA source, and the presentation** differ.
 
-- **No mode word → default combined run.** Do **`released` first**, then **`preview`** — back to
-  back, in that order. The released part produces the paste-ready copy-boxes for any published
+- **No mode word → default combined run.** Start with the **step-0 quick check** (always), then do
+  **`released`**, then **`preview`** — in that order. **If the quick check shows every app is already
+  documented, skip the released part entirely** (no collection, no canvas write) and go straight to
+  the preview. The released part produces the paste-ready copy-boxes for any published
   release not yet in the Doc; the preview part then shows the work done **after the latest published
   release** (baseline = latest published tag → tip of `main`). In this combined run the preview part
   **does NOT run the preflight gate** — it shows the post-release backlog **even if the released
@@ -64,8 +66,9 @@ everywhere — only **scope, collection, the App JA source, and the presentation
   published, then latest published→`main`). This is the everyday "where do things stand" view: what
   to paste now, and what's queued behind it. Present the two parts clearly separated — released
   copy-boxes first (step 6), then a divider, then the preview section with its banner.
-- **`released`** (e.g. `/ja-changelog released` / `release`) → released only: the full workflow
-  below, paste-ready copy-boxes for the Doc. No preview section.
+- **`released`** (e.g. `/ja-changelog released` / `release`) → released only: the step-0 quick check,
+  then the full workflow below. If the quick check shows everything is already documented, **that's
+  the end of the run** (nothing to publish). No preview section.
 - **`preview`** (e.g. `/ja-changelog preview` / `simulado` / `simulación`, optionally per-app) →
   preview only, and it **runs the preflight gate**: it HALTS if any published release is still
   missing from the Doc (see preview mode below). Use this when you specifically want only the
@@ -214,6 +217,42 @@ canvas (chat only). The App JA `Pendiente` / App-Store-gating rules are unchange
 ## Workflow
 
 Run these steps **per app**. Work app-by-app so a failure in one doesn't lose the others.
+
+### 0. Quick check — ALWAYS run this first
+
+**Every invocation starts here.** It answers "did anything actually ship?" cheaply, *before* any
+collection work, and short-circuits the run when nothing did. (Distinct from the `preview` mode's
+**preflight gate** below — that one halts when the canvas is *behind*; this one skips work when
+everything is *equal*.)
+
+Build one table with, per app, the **latest production release** vs the **last documented version**:
+
+| Value | How to get it (cheap) |
+|-------|-----------------------|
+| Publicada — EDL / SIGEM / Gabinete | `gh release list --repo <repo> --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName'` — no git fetch needed, and drafts/prereleases are excluded for you (see "Why drafts matter") |
+| Publicada — App JA | the **App Store** live version (`itunes.apple.com/lookup`, see the App JA section) — the store is the only source of truth |
+| Documentada — all apps | the newest `### vX.Y.Z` in that app's canvas |
+
+**Reading the four canvases is expensive** (each returns 60–80k chars). Do NOT read them into your
+own context — delegate to a **subagent** that reads all four and returns **only** the newest
+`### vX.Y.Z` per app (four short lines).
+
+Present the table, then branch:
+
+- **All apps equal → nothing shipped.** Say so plainly and **SKIP the released path entirely**: no
+  collector run, no ClickUp cross-check, no canvas write, no notice.
+  - In **`released`** mode that's the end of the run.
+  - In the **default combined run**, continue to the **preview** section — it's independent of the
+    released path and may still have queued work.
+  - In **`preview`** mode the existing preflight gate applies instead (it halts when the canvas is
+    *behind*, which this check just proved it isn't).
+- **Any app differs → only that app has work.** Run steps 1–6 **only for the apps whose versions
+  differ**; don't collect the up-to-date ones at all.
+
+**App JA caveat:** "store == documented" only means no *released* work. A newer version may still be
+announced/deployed but not yet live (the ` - Pendiente` case). So for App JA also check the newest
+successful deploy run (`gh run list … --workflow 178346105`); if it's newer than both the store and
+the documented version, App JA **does** have work (a `Pendiente` entry) — don't skip it.
 
 ### 1. Determine scope (what's new since the last changelog)
 
