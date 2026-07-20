@@ -167,9 +167,36 @@ that as the collector's `--since`. (The Google Doc is legacy — only fall back 
 - The month-index and `↑ Arriba` links are clickable deep-links; Slack always shows a hover preview
   card (unavoidable). Native browsing = collapsible `##` headers.
 
-### Recipe: add a release to a canvas (full rebuild — the reliable path)
-The `**Meses:**` index must gain any new month and the `↑ Arriba` links must stay consistent, and
-neither can be edited surgically — so rebuild the whole canvas each time:
+### Recipe: add a release to a canvas
+
+**Pick the path by whether the new release's month header already exists in the canvas:**
+
+- **Same month (the common case)** — the newest month header (e.g. `## Julio 2026`) already exists →
+  use the **targeted insert** (Path A). One safe `prepend`, no index/link rebuild. **Preferred:**
+  ~4–5× cheaper, and it never touches the `**Meses:**` index or `↑ Arriba` links, so they can't break.
+- **New month** — this release is the FIRST of a new month (its `## Mes Año` header doesn't exist yet,
+  so the `**Meses:**` index must gain that month) → use the **full rebuild** (Path B). The index is a
+  single line that can't be edited surgically, so the whole canvas is rebuilt.
+
+#### Path A — targeted insert (same month; preferred)
+
+1. `slack_read_canvas <id>`. **If the new `vX.Y.Z` is already present, STOP** — it's already published
+   (don't duplicate); just sanity-check the index and report. Otherwise, from `section_id_mapping`
+   find the id of the **current top version entry** (the newest `### vX.Y.Z` under the newest month).
+2. `slack_update_canvas` edit_type=`prepend`, `section_id` = that top-entry id, content = the new
+   `### vX.Y.Z (D mes AAAA)` heading + its bullets (use `###`, the canvas's version level; keep the
+   category emojis; nested sub-bullets indented). `prepend` WITH a section_id inserts *before* that
+   entry — safe, no duplicate. This is the **one allowed use of a section_id** (never with `replace`).
+3. Do **not** touch the `**Meses:**` index or the `↑ Arriba` links — the month already exists, so they
+   stay correct. `slack_read_canvas <id>` once to verify the new entry is first under its month,
+   appears exactly once, and the index is intact.
+
+Then post the notice (shared step below).
+
+#### Path B — full rebuild (new month, or to normalize a drifted canvas)
+
+The `**Meses:**` index must gain the new month and the `↑ Arriba` links must stay consistent, and
+neither can be edited surgically — so rebuild the whole canvas:
 
 1. `slack_read_canvas <id>` → save its markdown to `dump.md`.
 2. `python3 scripts/render_canvas.py --extract < dump.md > flat.md` — strips the index / `↑ Arriba` /
@@ -186,7 +213,9 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    - `prepend` under the **product-header** id →
      `**Meses:** ` + each month as `[Mes Año](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<monthId>)` joined by ` · `.
    - `prepend` under **each month-header** id → `[↑ Arriba](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<productHeaderId>)`.
-7. **Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel
+#### After the write (BOTH paths) — post the notice
+
+**Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel
    `C0BGNRZ3480`) after writing the canvas(es) — canvas edits are **silent**, so this is how the team
    learns a release shipped. **This is standing, durable authorization from the user: send it
    automatically as part of publishing a release — do NOT ask for confirmation first, do not treat it
@@ -210,9 +239,15 @@ neither can be edited surgically — so rebuild the whole canvas each time:
    If **several apps** shipped in the same run, **combine them into ONE message**, one such per-app
    block separated by a blank line (don't send several separate messages).
 
-Steps 5–6 return very large payloads — run them in a **subagent** so they stay out of your context,
-and restate the "never `replace` with a `section_id`" rule to it. `preview` mode never writes to a
-canvas (chat only). The App JA `Pendiente` / App-Store-gating rules are unchanged.
+**Run either path in a subagent** — `slack_read_canvas` returns 60–80k chars, so even Path A's single
+read should stay out of your main context; Path B is heavier still (full body + a second read).
+Always restate the "never `replace` with a `section_id`" rule to the subagent. `preview` mode never
+writes to a canvas (chat only). The App JA `Pendiente` / App-Store-gating rules are unchanged.
+
+**Note on the flaky full-overwrite:** in this integration `replace` *without* `section_id` (Path B
+step 5) has intermittently been rejected (`missing_required_field:section_id`). If it fails, do NOT
+switch to `replace` *with* a section_id (that duplicates) — fall back to inserting each new/changed
+section via `prepend`+section_id, which is what Path A does and has been reliable.
 
 ## Workflow
 
@@ -399,9 +434,10 @@ Group **by app, then by version (newest first)**. Match the existing Google Doc 
 
 ### 6. Publish (canvas) or present (legacy/preview)
 
-**In `released` mode, write each new entry into the app's Slack canvas** via the full-rebuild recipe
-in "Publishing target: Slack canvases" above, then briefly report to the user what you wrote (version
-+ canvas link) and any step-4 discrepancies. Fall back to the Doc copy-boxes below **only** if the
+**In `released` mode, write each new entry into the app's Slack canvas** via the "add a release to a
+canvas" recipe in "Publishing target: Slack canvases" above (Path A targeted insert for a same-month
+release — the common case; Path B full rebuild only when the release opens a new month), then briefly
+report to the user what you wrote (version + canvas link) and any step-4 discrepancies. Fall back to the Doc copy-boxes below **only** if the
 user explicitly asks for Doc output. The copy-box format below is still used for **`preview`** output
 and for the legacy Doc path.
 
