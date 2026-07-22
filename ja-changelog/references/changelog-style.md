@@ -5,20 +5,20 @@ Product Owner) — non-developers, but not the general public. Write **precise a
 that name the actual modules/screens/features, don't over-simplify, and don't hide technical work.
 See SKILL.md's audience note at the top.
 
-This format is derived from the existing changelog (now the per-app Slack canvases; the Google Doc is
-legacy). **Match the most recent real entries for that same app.** The only additions layered on top
-of the historical entries are: (1) a **category emoji** prefixing every bullet, and (2) treating
-**standalone technical changes** as first-class ⚙️ entries (both described below).
+This format matches the existing changelog in the `ja-changelog` DB / public site. **Match the most
+recent real entries for that same app.** Every bullet carries (1) a **category emoji** prefix and (2)
+treats **standalone technical changes** as first-class ⚙️ entries (both described below).
 
-## Where each app lives in the Doc
+## Where each app's data lives
 
-The Doc is organized **by app, then by version newest-first**. Each app has two stacked H1s:
-a codename and a full name. Append new versions at the **top** of the app's section.
+Each app has its own data folder in the `ja-changelog` DB — `data/<slug>/<YYYY-MM>.json` — holding
+that month's releases newest-first (`write_release.py` prepends new releases). The public site
+renders one section per app. **All four apps are in scope**, including the mobile app:
 
-- `# EDL` / `# Earth Data Lab`
-- `# SIGEM` / `# Sistema de Gestión de Emergencias`
-- `# Gabinete` / `# JA Gabinete`
-- (`# App Jalisco Alerta` is the mobile app — NOT in scope for this skill.)
+- `edl` (Earth Data Lab)
+- `sigem` (Sistema de Gestión de Emergencias)
+- `gabinete` (JA Gabinete)
+- `app-ja` (App Jalisco Alerta — the mobile app)
 
 ## Entry format
 
@@ -28,17 +28,20 @@ a codename and a full name. Append new versions at the **top** of the app's sect
 - <emoji> <cambio en lenguaje claro>
 ```
 
-Each bullet is prefixed with a **category emoji** (legend below) + a space, before the "Se…".
+Each bullet is prefixed with a **category emoji** (legend below) + a space, before the "Se…". The
+`## vX.Y.Z (fecha)` above is how a release **renders** on the site; you actually write only the
+bullets (in `flat.md`) and pass the version/date to `write_release.py`.
 
-- Heading: `## ` + version tag + ` (` + date + `)`. Keep the real tag (e.g. `v2.268.0`).
+- Version + date become `write_release.py`'s `--version` (keep the real tag, e.g. `v2.268.0`) and
+  `--date` (ISO `YYYY-MM-DD`); the site renders the date in Spanish.
 - **Date format: `18 junio 2026`** — day number, a space, the Spanish month in **lowercase**,
   a space, the year. No "de", not numeric. Months: enero, febrero, marzo, abril, mayo, junio,
   julio, agosto, septiembre, octubre, noviembre, diciembre.
 - **Flat bullet list** — no themed subsection titles.
 - **One `- ` bullet per distinct change.** Do not enumerate several separate changes inside one
-  bullet with commas — that breaks the Doc's convention. When a single feature genuinely has
-  several sub-parts worth listing, write a parent bullet ending in `:` and nest the parts as
-  indented sub-bullets (the Doc does this), e.g.:
+  bullet with commas — that breaks the one-bullet-per-change convention. When a single feature
+  genuinely has several sub-parts worth listing, write a parent bullet ending in `:` and nest the
+  parts as indented sub-bullets, e.g.:
   ```markdown
   - Se agrega una experiencia de inspecciones optimizada para celular:
       - Listado de inspecciones
@@ -47,13 +50,13 @@ Each bullet is prefixed with a **category emoji** (legend below) + a space, befo
       - Creación y edición de visitas
   ```
   Commas are fine *within* one coherent sentence, just not as a substitute for separate bullets.
-- **Merge same-day releases into one entry.** When two or more published releases share the same
-  publish date, combine them into a single entry with a version-range heading (lowest–highest), the
-  way the Doc does (e.g. `v0.38.2-v0.38.3 (25 junio 2026)` or `v0.34.0-v0.36.0 (15 junio 2026)`),
-  and list all of their bullets together under that one heading. Releases on **different** days stay
-  as separate entries. Determine the date from each release's `publishedAt` (the collector provides it).
-- A release may carry a qualifier after the date when relevant, joined with ` - ` (e.g.
-  `## v2.15.0 (7 abril 2026) - Solo Android`). Only add one if it genuinely applies.
+- **Merge same-day releases into one release.** When two or more published releases share the same
+  publish date, combine them into a single release with a version-range value (lowest–highest, e.g.
+  `v0.38.2-v0.38.3` or `v0.34.0-v0.36.0`), and list all of their bullets together. Releases on
+  **different** days stay as separate releases. Determine the date from each release's `publishedAt`
+  (the collector provides it).
+- A release may carry a qualifier (`write_release.py --note "Sólo Android"`) shown next to the
+  version on the site. Only add one if it genuinely applies.
 
 ## Voice: impersonal "Se…", value first
 
@@ -142,9 +145,9 @@ The source is the developer's Slack store-text (see SKILL.md "App JA"), written 
 ("Ahora puedes…, disfruta…, para ti"). Our audience is the **internal project stakeholders** (they
 know the project; one is the Product Owner), so App JA uses the **same formal, impersonal register and
 category emojis as the admin apps** — elevate the tone, don't copy the end-user marketing voice.
-Headings/date format are the same (`## vX.Y.Z (D mmmm aaaa)`), optional ` - Solo Android` / ` - Solo
-iOS` suffix if platform-specific. App JA store text rarely surfaces standalone ⚙️ technical items, so
-its bullets are usually ✨/🔧/🐛.
+Version/date/emoji format is the same as the admin apps; add an optional `--note "Sólo Android"` /
+`"Solo iOS"` only if platform-specific. App JA store text rarely surfaces standalone ⚙️ technical
+items, so its bullets are usually ✨/🔧/🐛.
 
 **Example A — Slack store-text (end-user tone) → stakeholder bullets (formal, with emojis)**
 Input (Slack):

@@ -1,9 +1,15 @@
 # Cloud Changelog Service — Design & Plan
 
-**Status: PLANNED — not yet implemented.** Deliberately on hold as of 2026-07-13; captured here so
-we can pick it up later. This describes a webhook-triggered cloud service that does what the
-`ja-changelog` skill does today (manually), as deterministically as possible, using the LLM **only**
-for the non-deterministic parts: interpreting code/commits and writing the changelog prose.
+**Status: PARTIALLY SUPERSEDED.** As of 2026-07-22 the DB-as-source-of-truth idea below is **built**,
+but as **repo-committed JSON + a public Astro/CloudFront site** (the `ja-changelog` product repo),
+not the DynamoDB service sketched below. The projection target is the **website**: the skill writes
+`data/<slug>/<YYYY-MM>.json` and pushes; GitHub Actions builds and deploys the static site. What
+remains un-built here is the **automated webhook ingestion** (§1, §5, §6) — ingestion is still
+human-run via the skill. Read §3/§5 with "site" as the render/projection target.
+
+Original framing (still accurate for the ingestion half): a webhook-triggered cloud service that does
+what the `ja-changelog` skill does today (manually), as deterministically as possible, using the LLM
+**only** for the non-deterministic parts: interpreting code/commits and writing the changelog prose.
 
 ## Core principle: the LLM is a pure, cached function
 
@@ -54,10 +60,10 @@ A database (DynamoDB or Postgres) sits between everything. Per app it records: l
 version, and **every changelog entry as structured data** (category, bullets, date, status). Per
 release: `hash(ReleaseFacts)`, `hash(bullets)`, publish state, Slack message ids.
 
-**Consequence:** "what's already documented" comes from the DB, not by re-reading the canvas. The
-canvas becomes a **projection** rendered *from* the DB — which removes the fragile
-read-canvas → `render_canvas.py --extract` → re-render round trip the skill fights today. The canvas
-is regenerated as a pure function of DB state, every time.
+**Consequence:** "what's already documented" comes from the DB (repo-committed JSON), not by
+re-reading any external document. The public **site** is a **projection** rendered *from* the DB —
+a pure static build of `data/`, no read-modify-write round trip. The site is regenerated as a pure
+function of DB state on every push.
 
 ## 4. The LLM step — as deterministic as an LLM gets
 
@@ -73,9 +79,10 @@ is regenerated as a pure function of DB state, every time.
 ## 5. Deterministic render + publish
 
 - `bullets (JSON) → Spanish markdown` via templates (voice + emoji rules become code, not vibes).
-- Canvas: `renderCanvas(all entries from DB) → full body`, then the safe `replace`-without-section_id
-  + `prepend` sequence. Pure function of DB state.
-- Slack notice: template from the same bullets (bullets inline, no canvas link).
+- Site: the Astro build renders all entries from the DB (`data/<slug>/*.json`) into static pages —
+  a pure function of DB state.
+- Slack notice: template from the same bullets (bullets inline, plus a link to the release's site
+  page `https://changelog.edl.jaliscoalerta.com/<slug>/<version>/`).
 
 ## 6. Per-release state machine (esp. App JA)
 
@@ -90,7 +97,7 @@ The `Pendiente` logic is just this state machine — no LLM in the gating.
 ## 7. Optional human-in-the-loop
 
 Since it's client/PO-facing, add one gate: post the rendered draft to a **private** approval channel
-and promote to the client canvas only on a 👍 reaction (a reaction webhook flips the state). Keeps a
+and promote to the published site only on a 👍 reaction (a reaction webhook flips the state). Keeps a
 human between the LLM and the audience without reintroducing manual work.
 
 ## 8. Suggested stack
@@ -111,17 +118,17 @@ Fit into the existing **AWS + CDK** setup (EDL already has `cdk/` and an `ErliaD
 | Compute compare range, collect PRs/commits/files | "new thing vs change" verb + category choice |
 | Match ClickUp candidates | Pick the right task framing / merge related commits |
 | Decide scope from DB | Write the Spanish value-first bullet |
-| Render canvas + Slack notice | — |
+| Render site + Slack notice | — |
 | App Store / Pendiente gating | — |
 
 ## 10. Phased build plan (when we resume)
 
 1. **Schema + collector-as-library.** Freeze the `ReleaseFacts` JSON schema; wrap `collect_app_changes.py`.
-2. **State store.** DynamoDB tables for apps / entries / releases; migrate current canvas contents in as seed.
+2. **State store.** DB tables for apps / entries / releases; seed from the current `data/` JSON.
 3. **Interpret Lambda.** Schema-locked, temp 0, memoized; golden-file tests over past releases (the
-   canvases are the expected output).
-4. **Renderers.** Canvas + Slack notice as pure functions of DB state; verify byte-parity against
-   current canvases.
+   existing DB entries are the expected output).
+4. **Renderers.** Site + Slack notice as pure functions of DB state; verify against the current
+   `data/` entries.
 5. **Webhook ingress + queue + worker** wiring; idempotency + dedupe.
 6. **App JA path**: deploy `workflow_run` + App Store poller + Pendiente state machine.
 7. **HITL approval gate** (optional) before flipping to `published`.

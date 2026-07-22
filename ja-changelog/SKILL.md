@@ -7,14 +7,14 @@ description: >-
   from the developer's Slack posts, not GitHub). Reads each repo's published GitHub releases (or,
   for App JA, the developer's Slack release messages), interprets what shipped, cross-checks the
   GitHub apps against their ClickUp tasks, and writes a value-oriented changelog grouped by app and
-  by version, matching the client's changelog Google Doc. Use this whenever the user asks to
-  "generate a changelog", "update the changelog", "write release notes", "what shipped" / "qué se
-  liberó", or to summarize recent releases for the client/customer for any of these apps — including
-  the mobile App JA — even if they don't name the skill explicitly. Use it for one app or all.
-  Invoked with no mode word it does a combined run — pending released updates (paste-ready) followed
-  by a preview of the work queued after the latest release. `released` gives only the paste-ready
-  release notes; `preview` (a.k.a. "simulado", e.g. "/ja-changelog preview") gives only the
-  merged-but-unreleased look-ahead and halts if the Doc is missing a published release.
+  by version, publishing it to the `ja-changelog` DB that powers the public changelog site. Use this
+  whenever the user asks to "generate a changelog", "update the changelog", "write release notes",
+  "what shipped" / "qué se liberó", or to summarize recent releases for the client/customer for any
+  of these apps — including the mobile App JA — even if they don't name the skill explicitly. Use it
+  for one app or all. Invoked with no mode word it does a combined run — publishes any released work
+  not yet in the DB, then shows a preview of the work queued after the latest release. `released`
+  publishes only the released work; `preview` (a.k.a. "simulado", e.g. "/ja-changelog preview") gives
+  only the merged-but-unreleased look-ahead and halts if the DB is missing a published release.
 ---
 
 # Jalisco Alerta — Changelog Generator
@@ -29,8 +29,9 @@ technical work. Each bullet should answer "what changed, concretely?" — a new 
 improvement, a fix, or a noteworthy technical change. Write for someone who follows the project, not
 someone hearing about it for the first time.
 
-The output is a **draft for the user to review and paste** into the changelog Google Doc.
-Do not write to the Doc directly — the Doc is read-only style/scope reference.
+In `released` mode the changelog is **published to the `ja-changelog` DB** (write the release JSON,
+commit, push — the public site deploys automatically); see "Publishing target" below. In `preview`
+mode it's an **internal look-ahead draft presented in-conversation**, never written anywhere.
 
 ## The apps
 
@@ -49,60 +50,60 @@ Slack, not GitHub — see "App JA (mobile app)" near the end.
 
 ## Modes: default combined, `released`, `preview`
 
-This skill has two underlying modes — **`released`** (documents published releases into the client
-Doc) and **`preview`** (the merged-but-unreleased backlog at the tip of `main`) — selected by a word
-in the invocation. Everything about *interpreting* changes, the ClickUp cross-check, the Spanish
+This skill has two underlying modes — **`released`** (publishes shipped releases to the DB → site)
+and **`preview`** (the merged-but-unreleased backlog at the tip of `main`) — selected by a word in
+the invocation. Everything about *interpreting* changes, the ClickUp cross-check, the Spanish
 voice/style, and the "one bullet per change / nested sub-bullets" formatting is **identical**
 everywhere — only **scope, collection, the App JA source, and the presentation** differ.
 
 - **No mode word → default combined run.** Start with the **step-0 quick check** (always), then do
   **`released`**, then **`preview`** — in that order. **If the quick check shows every app is already
-  documented, skip the released part entirely** (no collection, no canvas write) and go straight to
-  the preview. The released part produces the paste-ready copy-boxes for any published
-  release not yet in the Doc; the preview part then shows the work done **after the latest published
-  release** (baseline = latest published tag → tip of `main`). In this combined run the preview part
-  **does NOT run the preflight gate** — it shows the post-release backlog **even if the released
-  entries above it still need pasting** (the two are shown together, disjoint: documented→latest
-  published, then latest published→`main`). This is the everyday "where do things stand" view: what
-  to paste now, and what's queued behind it. Present the two parts clearly separated — released
-  copy-boxes first (step 6), then a divider, then the preview section with its banner.
+  documented, skip the released part entirely** (no collection, no DB write) and go straight to the
+  preview. The released part publishes any released version not yet in the DB; the preview part then
+  shows the work done **after the latest published release** (baseline = latest published tag → tip
+  of `main`). In this combined run the preview part **does NOT run the preflight gate** — it shows
+  the post-release backlog **even if released entries were just published this run** (the two are
+  disjoint: documented→latest published, then latest published→`main`). This is the everyday "where
+  do things stand" view: what shipped, and what's queued behind it. Present the two parts clearly
+  separated — the released summary first (what you published, per step 6), then a divider, then the
+  preview section with its banner.
 - **`released`** (e.g. `/ja-changelog released` / `release`) → released only: the step-0 quick check,
   then the full workflow below. If the quick check shows everything is already documented, **that's
   the end of the run** (nothing to publish). No preview section.
 - **`preview`** (e.g. `/ja-changelog preview` / `simulado` / `simulación`, optionally per-app) →
   preview only, and it **runs the preflight gate**: it HALTS if any published release is still
-  missing from the Doc (see preview mode below). Use this when you specifically want only the
-  look-ahead and want to be stopped if the Doc is behind.
+  missing from the DB (see preview mode below). Use this when you specifically want only the
+  look-ahead and want to be stopped if the DB is behind.
 
 **`preview` mode** answers *"what would the changelog say if we cut a release from the tip of each
 system right now?"* — i.e. the **merged-but-unreleased** backlog. It is an **internal planning view,
-NOT for the client Doc.**
+NOT for the public changelog site.**
 
 **Core invariant — a preview ALWAYS covers only `latest published tag → tip of main`, never released
 work.** Released work is already in prod, so it is never part of a preview; whether or not it's
-documented in the Doc yet is **irrelevant to what the preview contains**. The preview section is
-therefore the same in the default combined run and in standalone `preview`. The Doc affects **only**
-the standalone gate below — a *reminder to paste pending release notes first*, not a change to the
-preview's scope. (This is why the default run can show the preview right below still-unpasted release
-notes: the two are disjoint — `documented → latest published`, then `latest published → main`.)
+documented in the DB yet is **irrelevant to what the preview contains**. The preview section is
+therefore the same in the default combined run and in standalone `preview`. The DB affects **only**
+the standalone gate below — a *reminder to publish pending release notes first*, not a change to the
+preview's scope. (This is why the default run can show the preview right after the just-published
+release notes: the two are disjoint — `documented → latest published`, then `latest published → main`.)
 
 Differences from the released workflow:
 
-- **Preflight gate — for an explicit `preview` invocation, run this first and STOP if the Doc isn't
-  current.** (In the **default combined run** this gate is **skipped** — the released part is shown
-  right alongside, so just proceed.) Before computing a standalone preview, verify that every app you're
-  about to preview has its **released** changelog fully in the Doc. Do the released-mode scope check
-  (step 1: last documented version per app from the Doc, vs each app's **latest published release** —
+- **Preflight gate — for an explicit `preview` invocation, run this first and STOP if the DB isn't
+  current.** (In the **default combined run** this gate is **skipped** — the released part runs right
+  alongside, so just proceed.) Before computing a standalone preview, verify that every app you're
+  about to preview has its **released** changelog fully in the DB. Do the released-mode scope check
+  (step 1: last documented version per app from the DB, vs each app's **latest published release** —
   and for App JA, the **App Store live version** vs the documented version). If **any** in-scope app
-  has a published release (or, for App JA, a store-live version) **newer than what the Doc
+  has a published release (or, for App JA, a store-live version) **newer than what the DB
   documents**, **HALT — do not produce the preview at all.** List the apps that are behind and their
-  pending version(s), and tell the user to run `/ja-changelog` (released mode) first, paste those
-  entries into the Doc, then re-run `preview`. **Rationale:** a standalone preview of *unreleased*
-  work is misleading and error-prone while already-*released* work is still missing from the Doc — the
-  Doc must be an accurate "released" baseline before you look ahead. Only when the gate is clean for
+  pending version(s), and tell the user to run `/ja-changelog` (released mode) first, publish those
+  entries to the DB, then re-run `preview`. **Rationale:** a standalone preview of *unreleased* work
+  is misleading and error-prone while already-*released* work is still missing from the DB — the DB
+  must be an accurate "released" baseline before you look ahead. Only when the gate is clean for
   every in-scope app do you continue with the steps below.
 - **Scope — always `latest published tag → tip of main`** (per the invariant above; never depends on
-  the Doc). Use commits, not release tags: the baseline per app is the **latest published release
+  the DB). Use commits, not release tags: the baseline per app is the **latest published release
   tag** (the collector reports it as `latestPublished`), and the target is the **tip of the default
   branch**.
 - **Collect with `--preview`** instead of `--since`. Pull/fetch first, then:
@@ -123,131 +124,115 @@ Differences from the released workflow:
   its bullets **from commits** (the "no store text" path): baseline = the current **App Store** live
   version, target = tip of `main`; diff via
   `gh api repos/erliamx/erlia-app/compare/<liveVersionRef>...<defaultBranch>`. Mark them provisional.
-  The ` - Pendiente` / App-Store-gating rules do **not** apply in preview (nothing is released).
-- **Presentation is different: do NOT use the Doc copy-boxes and do NOT imply it's paste-ready.**
-  Lead with a loud banner — **`🔮 SIMULACIÓN / PREVIEW — cambios aún NO publicados. No pegar en el
-  Doc del cliente.`** — then present each app's changes as a normal readable draft (headings +
-  bullets) under a placeholder heading like `Próxima versión (preview) — desde vX.Y.Z` (no real tag
-  or date exists yet; show the baseline). Report `unreleasedCommitCount` per app so the user sees how
-  much is queued.
+  The `pending` / App-Store-gating rules do **not** apply in preview (nothing is released).
+- **Presentation — chat only, never written to the DB, and do NOT imply it's publishable.** Lead with
+  a loud banner — **`🔮 SIMULACIÓN / PREVIEW — cambios aún NO publicados. No publicar en el sitio.`** —
+  then present each app's changes as a normal readable draft (headings + bullets) under a placeholder
+  heading like `Próxima versión (preview) — desde vX.Y.Z` (no real tag or date exists yet; show the
+  baseline). Report `unreleasedCommitCount` per app so the user sees how much is queued.
 
 The rest of this document describes **`released` mode**. In `preview` mode, reuse steps 3–5
-(interpret / ClickUp / write) verbatim and swap in the four differences above.
+(interpret / ClickUp / write bullets) verbatim and swap in the differences above.
 
-## Publishing target: Slack canvases (per app) — the new source of truth
+## Publishing target: the `ja-changelog` repo → public site
 
-The client changelog now lives in **four per-app Slack canvases** in `#ja-changelog` (channel
-`C0BGNRZ3480`, team `T099H5TTQE8`), which **replace the Google Doc**. In `released` mode you now
-**write the new entry into the right canvas** instead of emitting Doc copy-boxes.
+The client changelog lives in the **`ja-changelog` repo** (a separate product repo, cloned locally at
+**`~/Documents/repos/erlia/ja-changelog`** — call it `$JC`). It is the **source of truth** *and* the
+projection: `$JC/data/<slug>/<YYYY-MM>.json` holds the release data, an Astro site renders it, and
+GitHub Actions deploys the public site on every push to `main`. In `released` mode you **write the
+release JSON and push** — that is the entire publish step.
 
-| App | Canvas id | Product `#` header (exact) |
-|-----|-----------|----------------------------|
-| App JA | `F0BFDQSP23Z` | `# App Jalisco Alerta` |
-| Gabinete | `F0BFDQTE607` | `# JA Gabinete` |
-| EDL | `F0BGPFZ22EL` | `# Earth Data Lab` |
-| SIGEM | `F0BFNUBFD6X` | `# Sistema de Gestión de Emergencias` |
+**Public site:** `https://changelog.edl.jaliscoalerta.com` — a release page is
+`https://changelog.edl.jaliscoalerta.com/<slug>/<version>/` (the version keeps its `v` prefix and any
+`-range`, e.g. `/edl/v2.301.4/`, `/app-ja/v2.30.0/`, `/edl/v2.294.8-v2.295.1/`); an app index is
+`/<slug>/`.
 
-Canvas base URL: `https://erlia.slack.com/docs/T099H5TTQE8/<CANVAS_ID>`.
+| App | data slug | month file |
+|-----|-----------|------------|
+| EDL | `edl` | `$JC/data/edl/<YYYY-MM>.json` |
+| SIGEM | `sigem` | `$JC/data/sigem/<YYYY-MM>.json` |
+| Gabinete | `gabinete` | `$JC/data/gabinete/<YYYY-MM>.json` |
+| App JA | `app-ja` | `$JC/data/app-ja/<YYYY-MM>.json` |
 
-**Canvas structure** (match exactly): `# Product` → `**Meses:** [Mes Año](…) · …` (clickable month
-index) → `## Mes Año` → `[↑ Arriba](…)` (back-to-top) → `### vX.Y.Z (D mes AAAA)` → bullets. Newest
-month first; newest release first within a month.
+**Data model** (see `$JC/schema/release.schema.json`): one file per **project/month**, holding that
+month's releases newest-first. Each release = `{version, date (ISO), status, note?, entries[]}`; each
+entry = `{category, text, children?, pending?}` where `category` ∈ `nuevo` ✨ / `mejora` 🔧 /
+`correccion` 🐛 / `tecnico` ⚙️. Everything about *writing bullets* — the Spanish voice, one-bullet-
+per-change, nested sub-bullets, category choice — is in step 5 and `references/changelog-style.md`.
 
-**Scope now comes from the canvas, not the Doc.** For each app, the "last documented version" =
-the **newest `### vX.Y.Z`** in its canvas (`slack_read_canvas <id>`, take the first `### v…`). Use
-that as the collector's `--since`. (The Google Doc is legacy — only fall back to it if asked.)
+**Scope comes from the DB (a cheap local file read).** For each app, the "last documented version" =
+the **first release in the newest month file**:
 
-### ⚠️ Slack-canvas tool quirks — do not forget
-- `slack_update_canvas` action=`replace` **with** a `section_id` **INSERTS A DUPLICATE** in this
-  integration (it does NOT replace in place). **Never use it.**
-- Safe primitives ONLY: `replace` **without** `section_id` (full-canvas overwrite) and `prepend`
-  **with** `section_id` (insert right after an element — no duplicate).
-- There is **no delete** (empty-content replace is blocked). Fix any mistake by **full-rebuilding**
-  the canvas, not by trying to remove a line.
-- The month-index and `↑ Arriba` links are clickable deep-links; Slack always shows a hover preview
-  card (unavoidable). Native browsing = collapsible `##` headers.
+```bash
+JC=~/Documents/repos/erlia/ja-changelog
+newest=$(ls "$JC/data/<slug>" | grep -E '^[0-9]{4}-[0-9]{2}\.json$' | sort | tail -1)
+python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['releases'][0]['version'] if d['releases'] else '(none)')" "$JC/data/<slug>/$newest"
+```
 
-### Recipe: add a release to a canvas
+Use that version as the collector's `--since`.
 
-**Pick the path by whether the new release's month header already exists in the canvas:**
+### Recipe: add a release to the DB
 
-- **Same month (the common case)** — the newest month header (e.g. `## Julio 2026`) already exists →
-  use the **targeted insert** (Path A). One safe `prepend`, no index/link rebuild. **Preferred:**
-  ~4–5× cheaper, and it never touches the `**Meses:**` index or `↑ Arriba` links, so they can't break.
-- **New month** — this release is the FIRST of a new month (its `## Mes Año` header doesn't exist yet,
-  so the `**Meses:**` index must gain that month) → use the **full rebuild** (Path B). The index is a
-  single line that can't be edited surgically, so the whole canvas is rebuilt.
+Write one small month file and push. `write_release.py` picks the file from the date's month,
+prepends the release newest-first (creating the month file if it's a new month), refuses a duplicate
+version, and validates against the schema.
 
-#### Path A — targeted insert (same month; preferred)
-
-1. `slack_read_canvas <id>`. **If the new `vX.Y.Z` is already present, STOP** — it's already published
-   (don't duplicate); just sanity-check the index and report. Otherwise, from `section_id_mapping`
-   find the id of the **current top version entry** (the newest `### vX.Y.Z` under the newest month).
-2. `slack_update_canvas` edit_type=`prepend`, `section_id` = that top-entry id, content = the new
-   `### vX.Y.Z (D mes AAAA)` heading + its bullets (use `###`, the canvas's version level; keep the
-   category emojis; nested sub-bullets indented). `prepend` WITH a section_id inserts *before* that
-   entry — safe, no duplicate. This is the **one allowed use of a section_id** (never with `replace`).
-3. Do **not** touch the `**Meses:**` index or the `↑ Arriba` links — the month already exists, so they
-   stay correct. `slack_read_canvas <id>` once to verify the new entry is first under its month,
-   appears exactly once, and the index is intact.
-
-Then post the notice (shared step below).
-
-#### Path B — full rebuild (new month, or to normalize a drifted canvas)
-
-The `**Meses:**` index must gain the new month and the `↑ Arriba` links must stay consistent, and
-neither can be edited surgically — so rebuild the whole canvas:
-
-1. `slack_read_canvas <id>` → save its markdown to `dump.md`.
-2. `python3 scripts/render_canvas.py --extract < dump.md > flat.md` — strips the index / `↑ Arriba` /
-   `## Mes` headers back to a flat `## vX.Y.Z (fecha)` entry list.
-3. Put the **new** `## vX.Y.Z (D mes AAAA)` + bullets at the **TOP** of `flat.md`.
-4. `python3 scripts/render_canvas.py --product "<product name>" < flat.md > body.md` — regroups by month.
-   **Pass the product name WITHOUT the leading `# `** (e.g. `--product "App Jalisco Alerta"`, not
-   `"# App Jalisco Alerta"`): the script prepends `# ` itself, so passing the `#` yields a broken
-   double-hash header `# # …` that then breaks the step-6 product-header id match.
-5. `slack_update_canvas` action=`replace`, **no** `section_id`, content = `body.md` (full overwrite;
-   clears the old index/links too).
-6. `slack_read_canvas <id>` → from `section_id_mapping` take the product-header id and every
-   `## Mes Año` id (document order), then:
-   - `prepend` under the **product-header** id →
-     `**Meses:** ` + each month as `[Mes Año](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<monthId>)` joined by ` · `.
-   - `prepend` under **each month-header** id → `[↑ Arriba](https://erlia.slack.com/docs/T099H5TTQE8/<id>?focus_section_id=<productHeaderId>)`.
-#### After the write (BOTH paths) — post the notice
-
-**Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel
-   `C0BGNRZ3480`) after writing the canvas(es) — canvas edits are **silent**, so this is how the team
-   learns a release shipped. **This is standing, durable authorization from the user: send it
-   automatically as part of publishing a release — do NOT ask for confirmation first, do not treat it
-   as optional.** Never skip it, and never thread it (always top-level).
-   **Message content — paste a COPY of the release's changelog bullets, and do NOT link the canvas.**
-   A bare canvas URL makes Slack render a big preview card that wastes space and is awkward to use, so
-   **omit the link entirely** — paste the just-published version's bullets inline so the team reads
-   what shipped without leaving the channel. The canvas holds the full history for anyone who wants
-   the older entries. Format per app (heading line, blank line, then the bullets exactly as written to
-   the canvas for that version, keeping any nested sub-bullets indented):
+1. **Write the bullets to a flat file** `flat.md` — the same flat markdown this skill produces:
+   top-level `- ✨ …` / `- 🔧 …` / `- 🐛 …` / `- ⚙️ …` bullets with 4-space-indented nested
+   sub-bullets. (Alternatively build a JSON array of entry objects and pass `--entries`.)
+2. **Run the writer:**
+   ```bash
+   JC=~/Documents/repos/erlia/ja-changelog
+   python3 "$JC/scripts/write_release.py" --app <slug> --version <vX.Y.Z> --date <YYYY-MM-DD> \
+     --status released --flat flat.md
+   #   add --note "Sólo Android"  for a platform qualifier
+   #   add --status pending        for App JA announced-but-not-yet-live work
+   #   add --replace               only to overwrite an existing version on purpose
    ```
-   🚀 **EDL** — nueva versión **v2.287.1** publicada
-
-   • ✨ Se agrega el historial de las últimas 24 horas en la vista de detalle de un riesgo…
-   • 🔧 Se cambia la fuente de datos del monitor de riesgos para mostrar los riesgos registrados…
-   • ⚙️ Se agrega el endpoint de vista web para compartir notificaciones en WhatsApp/Telegram.
+   It prints the path it wrote and exits non-zero (writing nothing) on a schema/validation failure or
+   a duplicate version. If it reports the version already exists, **STOP** — it's already published.
+   Run `python3 "$JC/scripts/validate.py"` after writing to double-check the whole DB is valid.
+3. **Commit to `main` and push** — this is the publish; GitHub Actions builds and deploys the site.
+   ```bash
+   git -C "$JC" add data && git -C "$JC" commit -m "<slug>: <vX.Y.Z>" && git -C "$JC" push
    ```
-   The bullets are a verbatim copy of what you wrote to the canvas for that version, **including the
-   category emoji** (✨/🔧/🐛/⚙️). (This `slack_send_message` integration renders standard `**bold**`;
-   use it for the app name and version, as the working notices do.)
-   If **several apps** shipped in the same run, **combine them into ONE message**, one such per-app
-   block separated by a blank line (don't send several separate messages).
+   If several apps shipped in one run, write each release, then make **one** commit for all of them.
+   (Direct-to-main is intended — the reviewed draft is the artifact; revert via git if ever needed.)
+   The repo uses an SSH remote via the 1Password agent; a lapsed grant can make `push`/`fetch` hang —
+   if so, ask the user to authorize the on-screen 1Password prompt and retry.
 
-**Run either path in a subagent** — `slack_read_canvas` returns 60–80k chars, so even Path A's single
-read should stay out of your main context; Path B is heavier still (full body + a second read).
-Always restate the "never `replace` with a `section_id`" rule to the subagent. `preview` mode never
-writes to a canvas (chat only). The App JA `Pendiente` / App-Store-gating rules are unchanged.
+#### After the push — post the notice (one per app, each with its site link)
 
-**Note on the flaky full-overwrite:** in this integration `replace` *without* `section_id` (Path B
-step 5) has intermittently been rejected (`missing_required_field:section_id`). If it fails, do NOT
-switch to `replace` *with* a section_id (that duplicates) — fall back to inserting each new/changed
-section via `prepend`+section_id, which is what Path A does and has been reliable.
+**Always post a top-level notice** in `#ja-changelog` (`slack_send_message`, channel `C0BGNRZ3480`)
+after pushing — the site deploy is **silent**, so this is how the team learns a release shipped.
+**Standing, durable authorization from the user: send it automatically as part of publishing — do
+NOT ask for confirmation, do not treat it as optional, never skip it, and never thread it (always
+top-level).**
+
+Post **one message per app that shipped** (not a combined message). Each message = a heading line, a
+blank line, the version's bullets **verbatim** (including the category emoji ✨/🔧/🐛/⚙️, nested
+sub-bullets indented), a blank line, then a final link line to the release's site page — Slack does
+not embed the page, so the link must be explicit:
+
+```
+🚀 **EDL** — nueva versión **v2.287.1** publicada
+
+• ✨ Se agrega el historial de las últimas 24 horas en la vista de detalle de un riesgo…
+• 🔧 Se cambia la fuente de datos del monitor de riesgos para mostrar los riesgos registrados…
+• ⚙️ Se agrega el endpoint de vista web para compartir notificaciones en WhatsApp/Telegram.
+
+🔗 Ver más: https://changelog.edl.jaliscoalerta.com/edl/v2.287.1/
+```
+
+- Use **"Ver más:"**, NOT "Detalle:" — the message already carries the full changelog, so "Detalle"
+  wrongly implies there's more detail on the page.
+- The link is `https://changelog.edl.jaliscoalerta.com/<slug>/<version>/`. Verify the page returns
+  **200** before relying on the link (the deploy can lag the push by a bit); `curl` may be
+  unavailable in some shells — use `python3` + `urllib` to check.
+- This `slack_send_message` integration renders standard `**bold**`; use it for the app name and
+  version, as the working notices do.
+
+`preview` mode never writes the DB or pushes (chat only).
 
 ## Workflow
 
@@ -257,7 +242,7 @@ Run these steps **per app**. Work app-by-app so a failure in one doesn't lose th
 
 **Every invocation starts here.** It answers "did anything actually ship?" cheaply, *before* any
 collection work, and short-circuits the run when nothing did. (Distinct from the `preview` mode's
-**preflight gate** below — that one halts when the canvas is *behind*; this one skips work when
+**preflight gate** below — that one halts when the DB is *behind*; this one skips work when
 everything is *equal*.)
 
 Build one table with, per app, the **latest production release** vs the **last documented version**:
@@ -266,57 +251,40 @@ Build one table with, per app, the **latest production release** vs the **last d
 |-------|-----------------------|
 | Publicada — EDL / SIGEM / Gabinete | `gh release list --repo <repo> --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName'` — no git fetch needed, and drafts/prereleases are excluded for you (see "Why drafts matter") |
 | Publicada — App JA | the **App Store** live version (`itunes.apple.com/lookup`, see the App JA section) — the store is the only source of truth |
-| Documentada — all apps | the newest `### vX.Y.Z` in that app's canvas |
+| Documentada — all apps | the first release in the newest month file under `$JC/data/<slug>/` (see "Publishing target" above) |
 
-**Reading the four canvases is expensive** (each returns 60–80k chars). Do NOT read them into your
-own context — delegate to a **subagent** that reads all four and returns **only** the newest
-`### vX.Y.Z` per app (four short lines).
+**Reading the documented version is cheap and local** — `ls $JC/data/<slug>` → newest `YYYY-MM.json`
+→ its first `releases[]` entry's `version`.
 
 Present the table, then branch:
 
 - **All apps equal → nothing shipped.** Say so plainly and **SKIP the released path entirely**: no
-  collector run, no ClickUp cross-check, no canvas write, no notice.
+  collector run, no ClickUp cross-check, no DB write, no notice.
   - In **`released`** mode that's the end of the run.
   - In the **default combined run**, continue to the **preview** section — it's independent of the
     released path and may still have queued work.
-  - In **`preview`** mode the existing preflight gate applies instead (it halts when the canvas is
+  - In **`preview`** mode the existing preflight gate applies instead (it halts when the DB is
     *behind*, which this check just proved it isn't).
 - **Any app differs → only that app has work.** Run steps 1–6 **only for the apps whose versions
   differ**; don't collect the up-to-date ones at all.
 
 **App JA caveat:** "store == documented" only means no *released* work. A newer version may still be
-announced/deployed but not yet live (the ` - Pendiente` case). So for App JA also check the newest
+announced/deployed but not yet live (the `pending` case). So for App JA also check the newest
 successful deploy run (`gh run list … --workflow 178346105`); if it's newer than both the store and
-the documented version, App JA **does** have work (a `Pendiente` entry) — don't skip it.
+the documented version, App JA **does** have work (a `pending` entry) — don't skip it.
 
 ### 1. Determine scope (what's new since the last changelog)
 
-The default scope is **only releases newer than what's already documented**. **The changelog now
-lives in the per-app Slack canvases (see "Publishing target: Slack canvases" above) — read the last
-documented version from the app's canvas (its newest `### vX.Y.Z`), not the Google Doc.** The Doc
-steps below are legacy; use them only if explicitly asked to work against the Doc.
-
-Legacy (Google Doc) scope lookup:
-
-- **Doc id**: `1LYZFTd64Q_7hvT5k5-heTKeQZqR_mKRIqIbzaYdwQ-U` (the client's master changelog). Read
-  it with the available Google Docs/Drive tool. It's large (~70k chars) — if the read result is
-  too big for context, delegate the extraction to a subagent and ask it to return only the
-  format conventions and the last documented version per app.
-- The Doc is organized **by app** (`# EDL`/`# Earth Data Lab`, `# SIGEM`/`# Sistema de Gestión
-  de Emergencias`, `# Gabinete`/`# JA Gabinete`), versions newest-first. Find the **highest real
-  version under that app's section** — that tag is your `--since`.
-- **Skip placeholder stubs** when finding the last version: headings like `## v2.. ( junio
-  2026)` or a version whose only bullet is `- Feature` are reserved templates, not real
-  releases. Use the most recent entry that has genuine changelog content.
-- If the Doc is unavailable, ask the user for the last documented version per app, or an explicit
-  range. Never guess — a wrong `--since` silently drops or duplicates releases.
-
-If the user instead asks for a specific range or a full backfill, honor that and skip the Doc lookup.
+The default scope is **only releases newer than what's already documented in the DB** (the first
+release in the newest month file per app — see "Publishing target"). If the user instead asks for a
+specific range or a full backfill, honor that: use the collector's `--since <tag>` (or omit `--since`
+for a full backfill) and skip the DB lookup. Never guess a `--since` — a wrong one silently drops or
+duplicates releases; if unsure, ask the user for the last documented version or an explicit range.
 
 ### 2. Pull and collect the raw changes
 
-Pull the repo, then run the bundled collector. It filters out draft/prerelease tags and
-computes the correct compare range for each published release (see "Why drafts matter" below):
+Pull the repo, then run the bundled collector. It filters out draft/prerelease tags and computes the
+correct compare range for each published release (see "Why drafts matter" below):
 
 ```bash
 git -C <repo_path> pull --ff-only
@@ -326,7 +294,9 @@ python3 scripts/collect_app_changes.py <repo_path> --since <last_documented_tag>
 Omit `--since` for a full backfill. The script prints JSON: each in-scope release with its
 `compareRange`, merged `prs` (number, branch, title), `commits`, and `changedFiles` (each an
 `{status, path}` where status is `A`dded / `M`odified / `D`eleted / `R`enamed — see step 3 for why
-added-vs-modified matters).
+added-vs-modified matters). (If a local `git pull`/`fetch` hangs, it's usually the 1Password SSH
+grant — ask the user to authorize the prompt, or fall back to `gh api repos/<repo>/compare/<a>...<b>`,
+which needs no SSH.)
 
 ### 3. Interpret what each release actually does
 
@@ -395,34 +365,36 @@ can't find the commit, note the discrepancy for the user rather than inventing a
 
 ### 5. Write the changelog (Spanish, by app → by version)
 
-Group **by app, then by version (newest first)**. Match the existing Google Doc exactly. See
-`references/changelog-style.md` for the full format, voice, and before/after examples. Core rules:
+Group **by app, then by version (newest first)**. See `references/changelog-style.md` for the full
+format, voice, and before/after examples. Core rules:
 
-- Heading per version: `## vX.Y.Z (D mmmm aaaa)` with the date as `18 junio 2026` (lowercase
-  Spanish month, no "de"). Place each app's versions under its `# Codename` / `# Full Name` H1s.
-- **Merge releases that share the same publish date into one entry** with a version-range heading
-  (lowest–highest, e.g. `v0.38.2-v0.38.3 (25 junio 2026)`) and list all their bullets together.
-  Different days = separate entries. See `references/changelog-style.md`.
+- **Version + date per release.** These become the `--version` and `--date` fields of
+  `write_release.py`. Date is ISO `YYYY-MM-DD` (the release's `publishedAt`); the site renders it in
+  Spanish. Keep the real tag (e.g. `v2.268.0`).
+- **Merge releases that share the same publish date into one release** with a version-range value
+  (lowest–highest, e.g. `v0.38.2-v0.38.3`) and list all their bullets together. Different days =
+  separate releases. See `references/changelog-style.md`.
 - **Flat bullet list** per version — no themed subsections.
 - Spanish, impersonal, specific: bullets start with **"Se agrega…/Se mejora…/Se cambia…/Se corrige el
   error que causaba que…"**. Lead with what changed; you may name the concrete module/screen/feature
   since the audience knows the project (see the audience note at the top).
-- **Prefix every bullet with a category emoji** (one leading emoji + a space, before the "Se…"):
-  - **✨ Nueva funcionalidad** — a genuinely new capability (`Se agrega/Se incorpora/Se habilita…`).
-  - **🔧 Mejora o cambio** — a change/improvement to something that already exists (`Se mejora/Se
-    cambia/Se ajusta/Se optimiza…`).
-  - **🐛 Corrección** — a bug fix (`Se corrige el error que causaba que…`).
-  - **⚙️ Técnico** — a standalone technical change (endpoint, refactor, component/infra enhancement)
-    that isn't already represented by another entry (see step 3's technical-changes rule).
+- **Prefix every bullet with a category emoji** (one leading emoji + a space, before the "Se…") — the
+  writer maps it to the entry's `category`:
+  - **✨ Nueva funcionalidad** (`nuevo`) — a genuinely new capability (`Se agrega/Se incorpora/Se habilita…`).
+  - **🔧 Mejora o cambio** (`mejora`) — a change/improvement to something that already exists (`Se
+    mejora/Se cambia/Se ajusta/Se optimiza…`).
+  - **🐛 Corrección** (`correccion`) — a bug fix (`Se corrige el error que causaba que…`).
+  - **⚙️ Técnico** (`tecnico`) — a standalone technical change (endpoint, refactor, component/infra
+    enhancement) that isn't already represented by another entry (see step 3's technical-changes rule).
   On a parent bullet with nested sub-bullets, put the emoji on the **parent only**; sub-bullets have
   none. Pick the emoji by what the change *is*, not by wording — a reworded existing screen is 🔧, not
   ✨. When unsure between ✨ and 🔧, use the step-3 "new thing vs change to existing" test (Added files
   / `Cambiar` task verb → 🔧).
 - **One bullet per distinct change.** Never pack several distinct changes into a single bullet
-  joined by commas — that breaks the Doc's convention. If a single feature has several sub-parts
-  worth listing (e.g. a new module with multiple screens), use a parent bullet ending in `:` with
-  **nested sub-bullets**, the way the Doc does. Commas are fine only inside one coherent sentence,
-  not as a way to enumerate separate items.
+  joined by commas. If a single feature has several sub-parts worth listing (e.g. a new module with
+  multiple screens), use a parent bullet ending in `:` with **nested sub-bullets** (4-space indent in
+  the flat file). Commas are fine only inside one coherent sentence, not as a way to enumerate
+  separate items.
 - Merge several commits into one bullet only when they're genuinely one change.
 - No PR numbers, branch names, or English commit jargon in the body.
 - **Technical work → individual ⚙️ bullets, not one generic line.** Surface each *noteworthy,
@@ -432,49 +404,25 @@ Group **by app, then by version (newest first)**. Match the existing Google Doc 
   técnicas e internas…" line for everything. Genuine trivia (CI/lint/deps/tests) is dropped, or at
   most collapsed into a single short ⚙️ line — never a comma-enumeration.
 
-### 6. Publish (canvas) or present (legacy/preview)
+### 6. Publish (released) or present (preview)
 
-**In `released` mode, write each new entry into the app's Slack canvas** via the "add a release to a
-canvas" recipe in "Publishing target: Slack canvases" above (Path A targeted insert for a same-month
-release — the common case; Path B full rebuild only when the release opens a new month), then briefly
-report to the user what you wrote (version + canvas link) and any step-4 discrepancies. Fall back to the Doc copy-boxes below **only** if the
-user explicitly asks for Doc output. The copy-box format below is still used for **`preview`** output
-and for the legacy Doc path.
+**In `released` mode, write each new release into the `ja-changelog` DB and push** via the "add a
+release to the DB" recipe in "Publishing target" above (`write_release.py` → validate → commit to
+`main` → push; GitHub Actions deploys the site). Then post the Slack notice(s) (see "After the push
+— post the notice"), and briefly report to the user what you published (version + the site page
+`https://changelog.edl.jaliscoalerta.com/<slug>/<version>/`) and any step-4 discrepancies or
+intentionally-skipped work.
 
-**Never save a draft file.** Output the changelog directly in the conversation, formatted so the
-user can copy each piece straight into Google Docs (where headings and bullets are applied by the
-Doc, not by Markdown). The user pastes manually, so:
-
-- For **each version**, emit **two separate fenced code blocks** (each gets its own copy button):
-  1. The **heading line only**: `vX.Y.Z (D mmmm aaaa)` — no `##`, no leading dash.
-  2. The **bullets** for that version, **with NO leading `- ` markers** (one change per line), so
-     they don't collide with the Doc's automatic bullets. Indent nested sub-items with a **real Tab
-     character** (U+0009), **not spaces**. Google Docs does **not** auto-nest from the pasted tab,
-     but this lets the user paste the whole block in one shot and then quickly demote the tabbed
-     lines / delete the tabs — which the user prefers over multiple copy-paste cycles per level.
-     (Emit an actual tab byte in the code block, not the literal characters "\t" and not spaces.)
-- Group these under a plain-text label per app (`# Codename` / `# Full Name`), versions newest-first.
-  **Prefix the app label with 🚀 when that app has pending changes to add to the Doc** — i.e. it has
-  a published release newer than what the Doc documents (the entries you're presenting for pasting).
-  Apps with nothing pending get **no** emoji. (So a heading reads `🚀 SIGEM / Sistema de Gestión de
-  Emergencias` only when SIGEM has release notes waiting to be pasted; `EDL / Earth Data Lab` with no
-  emoji means EDL is already up to date.) This 🚀 marks the **released** (to-paste) sections only — in
-  a default combined run it does not go on the preview section's labels, since preview work isn't
-  "pending for the Doc."
-- Surface any discrepancies from step 4 and any releases you intentionally skipped (as normal text,
-  outside the copy boxes).
-
-Note: the connected Google Drive integration is **read-only** — there is no API to insert/edit an
-existing Google Doc, and a plain-text insert wouldn't reproduce the native list styling anyway. So
-the user copies the boxes themselves. Only attempt to write into the Doc if a real Google Docs edit
-tool (or the browser extension) is available **and** the user explicitly asks for it.
+**In `preview` mode, present the look-ahead draft in-conversation only** — the loud banner, then each
+app under its `Próxima versión (preview) — desde vX.Y.Z` heading with readable bullets, and the
+`unreleasedCommitCount` per app. Never write it to the DB or push.
 
 ## App JA — the mobile app (source: Slack, not GitHub)
 
 App JA's repo (`erliamx/erlia-app`) has **no GitHub releases**, so the collector doesn't apply.
 Instead: **which versions shipped** comes from a GitHub Actions workflow, and **the descriptive
-text** comes from the developer's Slack posts. Treat App JA as another section of the same Google
-Doc: it lives at the **top** of the Doc under `# App JA` / `# App Jalisco Alerta`.
+text** comes from the developer's Slack posts. In the DB, App JA is just another app — slug
+`app-ja` (`$JC/data/app-ja/<YYYY-MM>.json`), same schema as the rest.
 
 ### Scope — which versions actually shipped (authoritative)
 A version is "released" only when it deployed to the production store. The source of truth is the
@@ -488,10 +436,10 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
   --jq '.[] | select(.headBranch|test("^rc/[0-9]")) | "\(.headBranch[3:])  \(.createdAt[:10])"'
 ```
 
-The last documented version is the highest real `## vX.Y.Z` under the App JA section of the Doc
-(skip the `## v2.. (...)` / `- Feature` stub). Add every shipped version newer than that, newest-first,
-using the **deploy date** for the heading. **Versions are commonly skipped** (e.g. v2.22/2.25 never
-deployed) — the workflow tells you exactly what shipped, so don't assume contiguous numbering.
+The last documented version is the first release in App JA's newest DB month file
+(`$JC/data/app-ja/`). Add every shipped version newer than that, newest-first, using the **deploy
+date** for the date. **Versions are commonly skipped** (e.g. v2.22/2.25 never deployed) — the
+workflow tells you exactly what shipped, so don't assume contiguous numbering.
 
 **The `rc/X.Y.Z` branch name is a convention, not a guarantee — don't trust the regex alone.**
 Developers sometimes deploy a version from a differently-named branch (e.g. v2.27.0 shipped from
@@ -509,8 +457,8 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
 **The Apple App Store is the single source of truth for whether a version has shipped.** The GitHub
 workflow and the Slack post only tell you what the *pipeline* did; the store tells you what the
 *client can actually download*. A version is "released" **only** once it appears in the App Store —
-so confirm there before you mark any version live, and gate every ` - Pendiente` removal on it (see
-the ` - Pendiente` rule below).
+so confirm there before you mark any version `released`, and gate every `pending`→`released`
+transition on it (see the `pending` rule below).
 - **Apple App Store** (the authoritative check — clean JSON, gives the live version **and** its
   release date):
   ```bash
@@ -518,19 +466,20 @@ the ` - Pendiente` rule below).
     | python3 -c "import sys,json; a=json.load(sys.stdin)['results'][0]; print(a['version'], a['currentVersionReleaseDate'][:10])"
   ```
   (App Store id `6748151640`.) When this returns the version you're documenting, it **is** live —
-  use `currentVersionReleaseDate` as the deploy date for the heading.
+  use `currentVersionReleaseDate` as the `--date`.
 - **Google Play** (Android pkg `mx.erlia.jal.android`) has **no public version API**; scrape the
   details page and read the current-version token (heuristic — Google can change the structure):
   ```bash
   curl -s -A "Mozilla/5.0" "https://play.google.com/store/apps/details?id=mx.erlia.jal.android&hl=es&gl=US" \
     | grep -oE '\[\[\["[0-9]+\.[0-9]+\.[0-9]+"\]\]' | head -1
   ```
-  Google Play is **informational only** — it does **not** gate ` - Pendiente` removal (Apple does).
+  Google Play is **informational only** — it does **not** gate the `pending`→`released` transition
+  (Apple does).
 - The store only reports the **currently-live** version (not historical per-version dates), so it's
   the source of truth for "is the newest announced version live yet?"; use the deploy workflow for
   dates of older versions. Single-store releases are rare, so assume iOS and Android ship together;
-  in the uncommon case they diverge, keep ` - Pendiente` until the App Store lists it and flag it to
-  the user rather than guessing a ` - Solo Android` / ` - Solo iOS` label.
+  in the uncommon case they diverge, keep `--status pending` until the App Store lists it and flag
+  it to the user rather than guessing a `--note "Sólo Android"` / `"Solo iOS"` qualifier.
 
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
@@ -542,22 +491,22 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
   entries, and screenshots.
 - **Several RCs per version.** The same version may get multiple posts/RCs in #app-changelog as it
   is refined. **Read them all (including thread replies), accumulate their content into that one
-  version's entry, mention every RC to the user, and keep updating that version's draft on each run
-  until the user has pasted it into the Doc** — its content may still be changing.
+  version's entry, mention every RC to the user, and keep updating that version's entry on each run
+  until it's published (non-pending) to the DB** — its content may still be changing.
 - **A version is often announced here before it reaches the store.** #app-changelog gives the
   *notes*; the Slack post and the deploy workflow only mean the build was *cut/deployed*, **not** that
   the client can download it. Surface an announced version even if it's not live yet, but **flag its
   status** and mark it pending until the store confirms it.
-  When an announced-but-unreleased version is added to the Doc, its heading carries a **` - Pendiente`**
-  suffix (e.g. `## v2.27.0 (1 julio 2026) - Pendiente`) with the announcement date as placeholder.
-- **The Apple App Store is the single source of truth for removing ` - Pendiente`. Remove it the
+  When an announced-but-unreleased version is written to the DB, set **`--status pending`** (it
+  renders with a "Pendiente" badge on the site) and use the announcement date as placeholder.
+- **The Apple App Store is the single source of truth for clearing `pending`. Clear it the
   moment the version appears there — and never one moment before.** On every subsequent run, look up
   the live App Store version (the `itunes.apple.com/lookup` command above):
-  - If the store's live version is **not yet** the pending version → keep ` - Pendiente` as-is,
+  - If the store's live version is **not yet** the pending version → keep `status: pending` as-is,
     regardless of what Slack, the deploy workflow, or Google Play say. A cut build, a green pipeline,
     or an Android-only rollout is **not** enough.
-  - Once the App Store lists that version → drop ` - Pendiente` and set the heading date to the
-    store's `currentVersionReleaseDate`. Hand the user the corrected heading.
+  - Once the App Store lists that version → re-run `write_release.py --replace --status released`
+    with the store's `currentVersionReleaseDate` as `--date`, then commit + push.
 - **If a shipped version has no store text** (e.g. hotfix v2.26.1), derive one concise client-facing
   line from its commits (compare the rc run's `headSha` against the previous version's via
   `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
@@ -575,18 +524,15 @@ Convert the prose into changelog bullets:
   alertas recibidas".
 - **Prefix each bullet with the category emoji** (✨/🔧/🐛/⚙️), same legend as the admin apps (step 5).
   App JA's store text rarely surfaces standalone ⚙️ technical items, so it's usually ✨/🔧/🐛.
-- One bullet per distinct change; nested sub-bullets for enumerations (e.g. the Mundial content
-  list — parent bullet ending in `:` then indented sub-bullets, emoji on the parent only).
-- Heading `## vX.Y.Z (D mmmm aaaa)`; add ` - Solo Android` / ` - Solo iOS` only if the version is
-  platform-specific. Use the production-deploy date; the announcement date is a placeholder. If the
-  version is announced but not yet deployed to prod, append ` - Pendiente` and use the announcement
-  date as placeholder (see the scope rules above for how it gets removed once the version ships).
+- One bullet per distinct change; nested sub-bullets for enumerations (e.g. a Mundial content list —
+  parent bullet ending in `:` then indented sub-bullets, emoji on the parent only).
+- `--date` = the production-deploy date; the announcement date is a placeholder. Add `--note "Sólo
+  Android"` / `"Solo iOS"` only if the version is genuinely platform-specific. If the version is
+  announced but not yet live in the App Store, use `--status pending` and the announcement date as
+  placeholder (see the scope rules above for how it gets cleared once the version ships).
 
-(Note: older App JA entries already in the Doc were written in the warmer end-user voice — that's
-legacy; new entries use this formal register.)
-
-Present App JA exactly like step 6 (copy-boxes: heading line + dashless bullets). See
-`references/changelog-style.md` for worked App JA before/after examples.
+Present App JA exactly like the other apps (step 6). See `references/changelog-style.md` for worked
+App JA before/after examples.
 
 ## Why drafts matter (don't skip this)
 
