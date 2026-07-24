@@ -136,68 +136,66 @@ The rest of this document describes **`released` mode**. In `preview` mode, reus
 
 ## Publishing target: the `ja-changelog` repo → public site
 
-The client changelog lives in the **`ja-changelog` repo** (a separate product repo, cloned locally at
-**`~/Documents/repos/erlia/ja-changelog`** — call it `$JC`). It is the **source of truth** *and* the
-projection: `$JC/data/<slug>/<YYYY-MM>.json` holds the release data, an Astro site renders it, and
-GitHub Actions deploys the public site on every push to `main`. In `released` mode you **write the
-release JSON and push** — that is the entire publish step.
+The client changelog lives in **DynamoDB**, behind a CRUD API. The tooling lives in the
+**`ja-changelog` repo** (a separate product repo, cloned locally at
+**`~/Documents/repos/erlia/ja-changelog`** — call it `$JC`). In `released` mode you **POST the
+release to the API** — that is the entire publish step. There is **no commit and no deploy**: the
+site reads the API at runtime, so a published release is live immediately.
 
-**Public site:** `https://changelog.edl.jaliscoalerta.com` — a release page is
-`https://changelog.edl.jaliscoalerta.com/<slug>/<version>/` (the version keeps its `v` prefix and any
-`-range`, e.g. `/edl/v2.301.4/`, `/app-ja/v2.30.0/`, `/edl/v2.294.8-v2.295.1/`); an app index is
-`/<slug>/`.
+**Site:** `https://changelog.edl.jaliscoalerta.com` — **private**, behind a single shared user/pass
+(HTTP Basic Auth). A release page is `/<slug>/<version>/` (the version keeps its `v` prefix and any
+`-range`, e.g. `/edl/v2.301.4/`, `/edl/v2.294.8-v2.295.1/`); an app index is `/<slug>/`; the
+cross-app period report is `/reporte/`.
 
-| App | data slug | month file |
-|-----|-----------|------------|
-| EDL | `edl` | `$JC/data/edl/<YYYY-MM>.json` |
-| SIGEM | `sigem` | `$JC/data/sigem/<YYYY-MM>.json` |
-| Gabinete | `gabinete` | `$JC/data/gabinete/<YYYY-MM>.json` |
-| App JA | `app-ja` | `$JC/data/app-ja/<YYYY-MM>.json` |
+| App | slug |
+|-----|------|
+| EDL | `edl` |
+| SIGEM | `sigem` |
+| Gabinete | `gabinete` |
+| App JA | `app-ja` |
 
-**Data model** (see `$JC/schema/release.schema.json`): one file per **project/month**, holding that
-month's releases newest-first. Each release = `{version, date (ISO), status, note?, entries[]}`; each
-entry = `{category, text, children?, pending?}` where `category` ∈ `nuevo` ✨ / `mejora` 🔧 /
+**Data model** (see `$JC/schema/release.schema.json`): a release =
+`{version, date (ISO), status, note?, entries[]}`; each entry =
+`{category, text, children?, pending?}` where `category` ∈ `nuevo` ✨ / `mejora` 🔧 /
 `correccion` 🐛 / `tecnico` ⚙️. Everything about *writing bullets* — the Spanish voice, one-bullet-
 per-change, nested sub-bullets, category choice — is in step 5 and `references/changelog-style.md`.
 
-**Scope comes from the DB (a cheap local file read).** For each app, the "last documented version" =
-the **first release in the newest month file**:
+**Scope comes from the DB.** For each app, the "last documented version" is the newest release —
+one command prints them all:
 
 ```bash
 JC=~/Documents/repos/erlia/ja-changelog
-newest=$(ls "$JC/data/<slug>" | grep -E '^[0-9]{4}-[0-9]{2}\.json$' | sort | tail -1)
-python3 -c "import json,sys; d=json.load(open(sys.argv[1])); print(d['releases'][0]['version'] if d['releases'] else '(none)')" "$JC/data/<slug>/$newest"
+python3 "$JC/scripts/latest_version.py" --profile erlia-prod-edl
+# edl        v2.301.4                 2026-07-21  released
+# sigem      v1.131.6                 2026-07-20  released
 ```
 
-Use that version as the collector's `--since`.
+It reads DynamoDB directly with your AWS credentials (the API's GET routes are gated by the
+CloudFront origin secret, so a direct read is simpler for tooling). Use each app's printed version
+as the collector's `--since`. Add `--app <slug>` to limit it, `--json` for machine-readable output.
 
-### Recipe: add a release to the DB
+### Recipe: publish a release
 
-Write one small month file and push. `write_release.py` picks the file from the date's month,
-prepends the release newest-first (creating the month file if it's a new month), refuses a duplicate
-version, and validates against the schema.
+`write_release.py` signs the request with **IAM (SigV4)** using whatever AWS credentials are
+available — no API key. The API validates against the schema and rejects duplicates.
 
 1. **Write the bullets to a flat file** `flat.md` — the same flat markdown this skill produces:
    top-level `- ✨ …` / `- 🔧 …` / `- 🐛 …` / `- ⚙️ …` bullets with 4-space-indented nested
    sub-bullets. (Alternatively build a JSON array of entry objects and pass `--entries`.)
-2. **Run the writer:**
+2. **Publish:**
    ```bash
    JC=~/Documents/repos/erlia/ja-changelog
    python3 "$JC/scripts/write_release.py" --app <slug> --version <vX.Y.Z> --date <YYYY-MM-DD> \
-     --status released --flat flat.md
+     --status released --flat flat.md --profile erlia-prod-edl
    #   add --note "Sólo Android"  for a platform qualifier
    #   add --replace               only to overwrite an existing version on purpose
+   #   add --dry-run               to print the body without sending
    ```
-   **Never write a version that isn't live for the client yet** — see the App JA store rule below.
+   **Never publish a version that isn't live for the client yet** — see the App JA store rule below.
    `--status pending` exists in the schema but is **not** used: don't publish unreleased versions.
-   It prints the path it wrote and exits non-zero (writing nothing) on a schema/validation failure or
-   a duplicate version. If it reports the version already exists, **STOP** — it's already published.
-   Run `python3 "$JC/scripts/validate.py"` after writing to double-check the whole DB is valid.
-3. **Commit to `main` and push** — this is the publish; GitHub Actions builds and deploys the site.
-   ```bash
-   git -C "$JC" add data && git -C "$JC" commit -m "<slug>: <vX.Y.Z>" && git -C "$JC" push
-   ```
-   If several apps shipped in one run, write each release, then make **one** commit for all of them.
+   It exits non-zero (writing nothing) on validation failure or a duplicate version. If it reports
+   the version already exists, **STOP** — it's already published.
+   If several apps shipped in one run, publish each one; each is an independent API call.
    (Direct-to-main is intended — the reviewed draft is the artifact; revert via git if ever needed.)
    The repo uses an SSH remote via the 1Password agent; a lapsed grant can make `push`/`fetch` hang —
    if so, ask the user to authorize the on-screen 1Password prompt and retry.
@@ -258,10 +256,10 @@ Build one table with, per app, the **latest production release** vs the **last d
 |-------|-----------------------|
 | Publicada — EDL / SIGEM / Gabinete | `gh release list --repo <repo> --exclude-drafts --exclude-pre-releases --limit 1 --json tagName --jq '.[0].tagName'` — no git fetch needed, and drafts/prereleases are excluded for you (see "Why drafts matter") |
 | Publicada — App JA | the **App Store** live version (`itunes.apple.com/lookup`, see the App JA section) — the store is the only source of truth |
-| Documentada — all apps | the first release in the newest month file under `$JC/data/<slug>/` (see "Publishing target" above) |
+| Documentada — all apps | `python3 "$JC/scripts/latest_version.py"` — the newest release per app (see "Publishing target" above) |
 
-**Reading the documented version is cheap and local** — `ls $JC/data/<slug>` → newest `YYYY-MM.json`
-→ its first `releases[]` entry's `version`.
+**One command covers all four apps** — `latest_version.py` reads DynamoDB directly with your AWS
+credentials and prints `slug · version · date · status` per app.
 
 Present the table, then branch:
 
@@ -283,8 +281,8 @@ preview), but do **not** write it to the DB and do **not** post a notice.
 
 ### 1. Determine scope (what's new since the last changelog)
 
-The default scope is **only releases newer than what's already documented in the DB** (the first
-release in the newest month file per app — see "Publishing target"). If the user instead asks for a
+The default scope is **only releases newer than what's already documented in the DB** (the newest
+release per app, from `latest_version.py` — see "Publishing target"). If the user instead asks for a
 specific range or a full backfill, honor that: use the collector's `--since <tag>` (or omit `--since`
 for a full backfill) and skip the DB lookup. Never guess a `--since` — a wrong one silently drops or
 duplicates releases; if unsure, ask the user for the last documented version or an explicit range.
@@ -430,7 +428,7 @@ app under its `Próxima versión (preview) — desde vX.Y.Z` heading with readab
 App JA's repo (`erliamx/erlia-app`) has **no GitHub releases**, so the collector doesn't apply.
 Instead: **which versions shipped** comes from a GitHub Actions workflow, and **the descriptive
 text** comes from the developer's Slack posts. In the DB, App JA is just another app — slug
-`app-ja` (`$JC/data/app-ja/<YYYY-MM>.json`), same schema as the rest.
+`app-ja`, same schema and same publish call as the rest.
 
 ### Scope — which versions actually shipped (authoritative)
 A version is "released" only when it deployed to the production store. The source of truth is the
@@ -444,8 +442,8 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
   --jq '.[] | select(.headBranch|test("^rc/[0-9]")) | "\(.headBranch[3:])  \(.createdAt[:10])"'
 ```
 
-The last documented version is the first release in App JA's newest DB month file
-(`$JC/data/app-ja/`). Add every shipped version newer than that, newest-first, using the **deploy
+The last documented version is App JA's newest release in the DB
+(`latest_version.py --app app-ja`). Add every shipped version newer than that, using the **deploy
 date** for the date. **Versions are commonly skipped** (e.g. v2.22/2.25 never deployed) — the
 workflow tells you exactly what shipped, so don't assume contiguous numbering.
 
