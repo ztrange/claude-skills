@@ -124,7 +124,7 @@ Differences from the released workflow:
   its bullets **from commits** (the "no store text" path): baseline = the current **App Store** live
   version, target = tip of `main`; diff via
   `gh api repos/erliamx/erlia-app/compare/<liveVersionRef>...<defaultBranch>`. Mark them provisional.
-  The `pending` / App-Store-gating rules do **not** apply in preview (nothing is released).
+  The App-Store gating rule does **not** apply in preview (nothing is being published).
 - **Presentation — chat only, never written to the DB, and do NOT imply it's publishable.** Lead with
   a loud banner — **`🔮 SIMULACIÓN / PREVIEW — cambios aún NO publicados. No publicar en el sitio.`** —
   then present each app's changes as a normal readable draft (headings + bullets) under a placeholder
@@ -186,9 +186,10 @@ version, and validates against the schema.
    python3 "$JC/scripts/write_release.py" --app <slug> --version <vX.Y.Z> --date <YYYY-MM-DD> \
      --status released --flat flat.md
    #   add --note "Sólo Android"  for a platform qualifier
-   #   add --status pending        for App JA announced-but-not-yet-live work
    #   add --replace               only to overwrite an existing version on purpose
    ```
+   **Never write a version that isn't live for the client yet** — see the App JA store rule below.
+   `--status pending` exists in the schema but is **not** used: don't publish unreleased versions.
    It prints the path it wrote and exits non-zero (writing nothing) on a schema/validation failure or
    a duplicate version. If it reports the version already exists, **STOP** — it's already published.
    Run `python3 "$JC/scripts/validate.py"` after writing to double-check the whole DB is valid.
@@ -234,6 +235,12 @@ not embed the page, so the link must be explicit:
 
 `preview` mode never writes the DB or pushes (chat only).
 
+**Hard rule — nothing reaches the changelog before the client can use it.** For **App JA** that means
+a version is written to the DB **only once it is live in the Apple App Store** (see the App JA
+section). Announced or deployed-but-not-yet-live versions are **not** published in any form — no
+entry, no `pending` badge, no Slack notice. Report them to the user in-conversation instead (they
+also show up in the preview section), and publish them on a later run once the store lists them.
+
 ## Workflow
 
 Run these steps **per app**. Work app-by-app so a failure in one doesn't lose the others.
@@ -268,10 +275,11 @@ Present the table, then branch:
 - **Any app differs → only that app has work.** Run steps 1–6 **only for the apps whose versions
   differ**; don't collect the up-to-date ones at all.
 
-**App JA caveat:** "store == documented" only means no *released* work. A newer version may still be
-announced/deployed but not yet live (the `pending` case). So for App JA also check the newest
-successful deploy run (`gh run list … --workflow 178346105`); if it's newer than both the store and
-the documented version, App JA **does** have work (a `pending` entry) — don't skip it.
+**App JA caveat:** the App Store version is what decides. If **store == documented**, App JA has
+**nothing to publish** — even if a newer version was announced in Slack or deployed by the workflow.
+Still check the newest successful deploy run (`gh run list … --workflow 178346105`): if it's newer
+than the store, **report that version to the user as awaiting the store** (and it shows up in the
+preview), but do **not** write it to the DB and do **not** post a notice.
 
 ### 1. Determine scope (what's new since the last changelog)
 
@@ -457,8 +465,8 @@ gh run list --repo erliamx/erlia-app --workflow 178346105 --status success \
 **The Apple App Store is the single source of truth for whether a version has shipped.** The GitHub
 workflow and the Slack post only tell you what the *pipeline* did; the store tells you what the
 *client can actually download*. A version is "released" **only** once it appears in the App Store —
-so confirm there before you mark any version `released`, and gate every `pending`→`released`
-transition on it (see the `pending` rule below).
+so confirm there before you write any App JA version at all — the store is what gates publishing
+(see the "do not publish before the store" rule below).
 - **Apple App Store** (the authoritative check — clean JSON, gives the live version **and** its
   release date):
   ```bash
@@ -473,13 +481,12 @@ transition on it (see the `pending` rule below).
   curl -s -A "Mozilla/5.0" "https://play.google.com/store/apps/details?id=mx.erlia.jal.android&hl=es&gl=US" \
     | grep -oE '\[\[\["[0-9]+\.[0-9]+\.[0-9]+"\]\]' | head -1
   ```
-  Google Play is **informational only** — it does **not** gate the `pending`→`released` transition
-  (Apple does).
+  Google Play is **informational only** — it does **not** authorize publishing (Apple does).
 - The store only reports the **currently-live** version (not historical per-version dates), so it's
   the source of truth for "is the newest announced version live yet?"; use the deploy workflow for
   dates of older versions. Single-store releases are rare, so assume iOS and Android ship together;
-  in the uncommon case they diverge, keep `--status pending` until the App Store lists it and flag
-  it to the user rather than guessing a `--note "Sólo Android"` / `"Solo iOS"` qualifier.
+  in the uncommon case they diverge, **don't publish** until the App Store lists it, and flag it to
+  the user rather than guessing a `--note "Sólo Android"` / `"Solo iOS"` qualifier.
 
 ### Find the descriptive text per version
 The developer **Diego R Galindo** (`U099H6TPS04`) posts each release's store text ("texto para
@@ -491,22 +498,23 @@ history. Use `slack_read_channel` on the channel (and `slack_read_thread` for re
   entries, and screenshots.
 - **Several RCs per version.** The same version may get multiple posts/RCs in #app-changelog as it
   is refined. **Read them all (including thread replies), accumulate their content into that one
-  version's entry, mention every RC to the user, and keep updating that version's entry on each run
-  until it's published (non-pending) to the DB** — its content may still be changing.
+  version's draft, mention every RC to the user, and keep refining that draft on each run until the
+  version reaches the App Store and you finally publish it** — its content may still be changing.
 - **A version is often announced here before it reaches the store.** #app-changelog gives the
   *notes*; the Slack post and the deploy workflow only mean the build was *cut/deployed*, **not** that
-  the client can download it. Surface an announced version even if it's not live yet, but **flag its
-  status** and mark it pending until the store confirms it.
-  When an announced-but-unreleased version is written to the DB, set **`--status pending`** (it
-  renders with a "Pendiente" badge on the site) and use the announcement date as placeholder.
-- **The Apple App Store is the single source of truth for clearing `pending`. Clear it the
-  moment the version appears there — and never one moment before.** On every subsequent run, look up
-  the live App Store version (the `itunes.apple.com/lookup` command above):
-  - If the store's live version is **not yet** the pending version → keep `status: pending` as-is,
-    regardless of what Slack, the deploy workflow, or Google Play say. A cut build, a green pipeline,
-    or an Android-only rollout is **not** enough.
-  - Once the App Store lists that version → re-run `write_release.py --replace --status released`
-    with the store's `currentVersionReleaseDate` as `--date`, then commit + push.
+  the client can download it.
+- **DO NOT publish a version that isn't live in the App Store yet — not in any form.** No DB entry,
+  no `pending` badge, no Slack notice. The changelog must only ever describe what the client can
+  actually use. Instead, **report the announced/deployed version to the user in-conversation** (and
+  it will appear in the preview section), and publish it on a later run once the store lists it.
+- **The Apple App Store is the single source of truth for publishing an App JA version.** On every
+  run, look up the live App Store version (the `itunes.apple.com/lookup` command above):
+  - If the store's live version is **older** than the announced one → **write nothing**, regardless
+    of what Slack, the deploy workflow, or Google Play say. A cut build, a green pipeline, or an
+    Android-only rollout is **not** enough. Just tell the user it's waiting on the store.
+  - Once the App Store lists that version → write it with `--status released` and the store's
+    `currentVersionReleaseDate` as `--date`, then commit + push and post the notice as usual.
+    (Accumulate its Slack RC texts/commits across runs meanwhile, so the entry is ready when it ships.)
 - **If a shipped version has no store text** (e.g. hotfix v2.26.1), derive one concise client-facing
   line from its commits (compare the rc run's `headSha` against the previous version's via
   `gh api repos/erliamx/erlia-app/compare/<prevSha>...<thisSha>`), or a generic stability line.
@@ -526,10 +534,10 @@ Convert the prose into changelog bullets:
   App JA's store text rarely surfaces standalone ⚙️ technical items, so it's usually ✨/🔧/🐛.
 - One bullet per distinct change; nested sub-bullets for enumerations (e.g. a Mundial content list —
   parent bullet ending in `:` then indented sub-bullets, emoji on the parent only).
-- `--date` = the production-deploy date; the announcement date is a placeholder. Add `--note "Sólo
-  Android"` / `"Solo iOS"` only if the version is genuinely platform-specific. If the version is
-  announced but not yet live in the App Store, use `--status pending` and the announcement date as
-  placeholder (see the scope rules above for how it gets cleared once the version ships).
+- `--date` = the App Store's `currentVersionReleaseDate` for the version you're publishing. Add
+  `--note "Sólo Android"` / `"Solo iOS"` only if the version is genuinely platform-specific. If the
+  version is announced but not yet live in the App Store, **don't write it at all** — keep the draft
+  and publish on a later run (see the scope rules above).
 
 Present App JA exactly like the other apps (step 6). See `references/changelog-style.md` for worked
 App JA before/after examples.
