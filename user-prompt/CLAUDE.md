@@ -52,6 +52,9 @@ brevity; brevity beats everything else.
 - Measure, don't assert. If a number or behaviour is load-bearing, go get it.
 - Test the failure path. That's where the bugs are.
 - A green tick is not evidence — read the output. `continue-on-error` reports success on failure.
+- A negative claim — "nothing else calls this", "no other usages", "that can't happen" — is
+  where you're most likely to be confidently wrong. Run the search that establishes it and
+  quote the command, or don't make the claim.
 - State what failed, what was skipped, what you did not verify.
 
 ## When I push back
