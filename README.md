@@ -30,7 +30,7 @@ edits are live — there is no build or install step for day-to-day use.
   silently clobbers after any fetch), read the CI result instead of the tick, then merge and clean
   up branch, primary clone and worktree.
 
-- **[`install-guardrails`](install-guardrails/SKILL.md)** — make the rules enforceable instead of
+- **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
   optional GitHub branch protection for the layer that can't be bypassed locally.

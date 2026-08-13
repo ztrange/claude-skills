@@ -1,13 +1,13 @@
 ---
-name: install-guardrails
+name: setup-git-guardrail
 description: >-
   Install git hooks that keep the primary clone parked on `main` and push all work into worktrees:
   a `pre-commit` and `pre-merge-commit` that refuse any commit made in the primary clone, a
   `reference-transaction` hook that catches the paths those never see (`cherry-pick`, `revert`,
   `reset --hard`, `--no-verify`), and a `post-checkout` that says so loudly when the primary
-  drifts off `main`. Use when the user says "install guardrails",
+  drifts off `main`. Use when the user says "set up git guardrails", "install guardrails",
   "protect main", "prevent commits to main", "stop me committing in the primary clone", "add the
-  git hooks", "set up branch protection", or "instala los guardrails". Checks what git already
+  git hooks", "set up branch protection", "update the git hooks", or "instala los guardrails". Checks what git already
   enforces before installing anything, verifies by testing the failure path — including that
   `git pull --ff-only` still works — and states plainly where the guardrail can be bypassed.
 ---
@@ -59,6 +59,7 @@ Two hooks, both keyed on the primary-clone test. `pre-commit` refuses:
 
 ```sh
 #!/bin/sh
+# managed-by: setup-git-guardrail v2 — re-run the skill to update; edits here are overwritten
 git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
 common_dir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$git_dir" = "$common_dir" ] || exit 0     # linked worktree: this is where work belongs
@@ -74,6 +75,8 @@ not undo the checkout — it reports an error about a switch that already succee
 the one place someone is reading. Args: `$1` old HEAD, `$2` new HEAD, `$3` = 1 for a branch switch.
 
 ```sh
+#!/bin/sh
+# managed-by: setup-git-guardrail v2 — re-run the skill to update; edits here are overwritten
 [ "$3" = "1" ] || exit 0
 # ...same primary-clone test...
 branch=$(git rev-parse --abbrev-ref HEAD)
@@ -98,6 +101,7 @@ installed. A `reference-transaction` hook catches exactly those, because they ar
 
 ```sh
 #!/bin/sh
+# managed-by: setup-git-guardrail v2 — re-run the skill to update; edits here are overwritten
 [ "$1" = prepared ] || exit 0
 gd=$(cd "$(git rev-parse --git-dir)" && pwd); cm=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$gd" = "$cm" ] || exit 0
@@ -128,7 +132,7 @@ Neither mechanism subsumes the other:
 | `git merge --squash` + commit | refused | refused |
 | `pull --ff-only`, `worktree add -b`, commit in a worktree | allowed | allowed |
 
-Install all four hooks. Verified together: every refusal above holds and all three permitted
+Install all four hooks, each carrying the `managed-by` marker from section 6. Verified together: every refusal above holds and all three permitted
 operations work.
 
 Two things this costs, both worth saying out loud when installing:
@@ -165,7 +169,53 @@ git config core.hooksPath .githooks     # tracked, shared, per-branch, per-clone
 Either way `core.hooksPath` is **not carried by a clone**. A fresh clone has no hooks until someone
 runs this again — which is why the server-side layer exists.
 
-## 6. Verify — test the failure path
+## 6. Upgrading an existing install
+
+Most repos that want this already have *something* — usually an older `pre-commit` that predates
+the `cherry-pick` / `revert` findings. **Re-running the skill must be safe on those.**
+
+Every hook this skill writes carries a marker as its second line:
+
+```sh
+# managed-by: setup-git-guardrail v2 — re-run the skill to update; edits here are overwritten
+```
+
+That marker is the whole upgrade mechanism. Classify each of the four hook names before writing
+anything:
+
+```bash
+H=$(git config --get core.hooksPath); H=${H:-$(git rev-parse --git-common-dir)/hooks}
+case "$H" in /*) ;; *) H="$(git rev-parse --show-toplevel)/$H" ;; esac   # relative paths are per-worktree
+for h in pre-commit pre-merge-commit reference-transaction post-checkout; do
+  if   [ ! -e "$H/$h" ];                              then echo "$h: absent      -> install"
+  elif v=$(sed -n 's/^# managed-by: setup-git-guardrail v\([0-9]*\).*/\1/p' "$H/$h") && [ -n "$v" ]; then
+       [ "$v" = 2 ] && echo "$h: v$v current -> leave" || echo "$h: v$v outdated -> replace"
+  else echo "$h: UNMANAGED  -> do not touch; report it"
+  fi
+done
+```
+
+The four outcomes, and the only one that needs judgement:
+
+| State | Action |
+|---|---|
+| absent | Install it |
+| marker, older version | Replace in place |
+| marker, current version | Leave alone — re-running the skill is a no-op |
+| **no marker** | **Never overwrite.** Someone wrote it by hand |
+
+An unmanaged hook is the `ja-changelog` case: a hand-written `pre-commit` carrying the incident
+that motivated it in its own comments. That commentary is worth more than the code. Copy it to
+`<hook>.pre-guardrail.bak`, show the user the diff against what the skill would install, and let
+them choose. Do not merge the two automatically — a hook that silently became something else is
+worse than one that is out of date.
+
+The common real-world result is a partial upgrade: two unmanaged hooks left in place, and the two
+missing files (`pre-merge-commit`, `reference-transaction`) added alongside. That closes the
+`cherry-pick` / `revert` / `merge --no-ff` holes without touching anything hand-written. Say which
+files you added and which you left, by name.
+
+## 7. Verify — test the failure path
 
 Installing is not evidence. In the repo you just installed into:
 
@@ -184,7 +234,7 @@ cd <a worktree> && git commit --allow-empty -m probe   # must SUCCEED
 Line three is the regression that matters: a stricter hook that refuses every update to
 `refs/heads/main` passes the first two tests and quietly bricks the primary clone's only job.
 
-## 7. Server-side, the layer that cannot be bypassed
+## 8. Server-side, the layer that cannot be bypassed
 
 Local hooks are per-machine and per-clone. Branch protection is the only enforcement that survives
 a fresh clone or a colleague's laptop:
