@@ -37,8 +37,8 @@ edits are live — there is no build or install step for day-to-day use.
 
 - **[`sync-config`](sync-config/SKILL.md)** — bring the installed config up to date: pull the repos
   behind the symlinks in `~/.claude/`, report what changed (trigger descriptions, global prompt
-  rules, new skills), then reconcile the links — add the missing ones, remove only the dangling
-  ones, always pointing at the main clone.
+  rules, new skills), then reconcile the links — add the missing ones, repoint the ones whose repo
+  moved, remove only what has no replacement anywhere, always pointing at the main clone.
 
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
@@ -78,7 +78,7 @@ requires restarting Claude Code once so the new directory gets watched.
 
 Link to the **main clone**, not a worktree: the worktree goes away when its branch lands, and the
 link dies with it. After that, `/sync-config` keeps the install current — it pulls the repos behind
-the links, says what changed, and adds or prunes links to match.
+the links, says what changed, and adds, repoints or prunes links to match.
 
 ## Build a bundle for Cowork
 

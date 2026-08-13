@@ -73,7 +73,7 @@ Compare the skill directories each repo now contains against `~/.claude/skills/`
 | Case | Action |
 |---|---|
 | Skill directory in the repo, no link | Create it: `ln -s <main-clone>/<skill> ~/.claude/skills/<skill>` |
-| Link whose target no longer exists | Remove the link. Dangling is an observed fact — the rename or deletion already happened upstream |
+| Link whose target no longer exists | Search before removing — see below. A dangling link usually means the repo moved, not that the skill died |
 | Link into a worktree, target exists | Report it, don't rewrite it. Someone is running a branch live on purpose |
 | Link into the main clone, target exists | Leave it. The pull already updated the content |
 | `deprecated/`, `user-prompt/`, the repo root | Never link into `skills/` — none of them is a skill |
@@ -88,8 +88,28 @@ lands, and the link dies with it.
   it, never delete it.
 - Already that symlink → nothing to do.
 
+### A dangling link is a question, not a verdict
+
+Dangling proves the *path* is dead. It says nothing about the skill, and the common cause is a
+repo that was renamed or moved with the skill still inside it. So look for the replacement before
+removing anything:
+
+```bash
+find ~/Documents/repos -maxdepth 3 -name SKILL.md -not -path "*/node_modules/*" \
+  -exec grep -l "^name: <skill>" {} +
+```
+
+| What the search finds | Action |
+|---|---|
+| A `SKILL.md` whose front-matter `name:` matches the dead link | Repoint: `rm` the link, recreate it against the new path. Report the move — old path → new path |
+| Two or more matches | Don't guess. Report the candidates with their repo remotes and ask |
+| Nothing | Remove the link and say what target it pointed at, so a wrong removal is visible |
+
+Front-matter `name:`, not the directory name, is what identifies a skill across a move — the
+directory can be renamed with it.
+
 Fail closed. A reconciliation that would remove every link is a bug, never a clean slate — stop
-and report instead. Each removal names the target that no longer exists.
+and report instead.
 
 ## 5. Report
 
@@ -97,8 +117,10 @@ and report instead. Each removal names the target that no longer exists.
 - What changed behaviourally — new or reworded trigger descriptions, global prompt rules, new
   skills. Not a commit dump.
 - Links added, removed, or flagged, each with its target path.
-- **Restart or not.** A *new* directory in `~/.claude/skills/` is picked up only after one Claude
-  Code restart; edits to an already-linked target are live in the next session. Say which applies.
-  Nothing added means no restart.
+- **Don't promise a restart you haven't tested.** A new symlink in `~/.claude/skills/` was picked
+  up by the *running* session, with no restart — observed 2026-08-12, adding `sync-config` and
+  `install-guardrails` mid-session. Report what you see: if a skill you just linked shows up in
+  the available-skills list, say it's live; if it doesn't, say a restart is needed. The one case
+  that has genuinely needed a restart is creating `~/.claude/skills/` itself for the first time.
 - Cowork installs a packaged `.skill` bundle and can't follow a symlink. If a skill the user runs
   in Cowork changed, say once: rebuild with `python3 package_skill.py <skill-dir> .`.
