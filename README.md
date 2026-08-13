@@ -25,6 +25,11 @@ edits are live — there is no build or install step for day-to-day use.
   context (new session, or after `/clear`): objective, observed state, the next concrete action,
   and the dead ends worth not repeating.
 
+- **[`merge`](merge/SKILL.md)** — land a PR on a `main` that may have moved: detect it locally
+  rather than trusting `mergeStateStatus`, rebase, force-push under a *pinned* lease (the bare one
+  silently clobbers after any fetch), read the CI result instead of the tick, then merge and clean
+  up branch, primary clone and worktree.
+
 - **[`install-guardrails`](install-guardrails/SKILL.md)** — make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
