@@ -45,8 +45,10 @@ edits are live — there is no build or install step for day-to-day use.
   moved, remove only what has no replacement anywhere, always pointing at the main clone.
 
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
-  sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
-  [`deprecated/`](deprecated/) for history; don't edit that copy.
+  sits with the app it feeds (DynamoDB + API + site). Since 2026-08-13 it also *installs* with that
+  repo — a tracked `.claude/skills/ja-changelog -> ../../skill` symlink — so it is no longer linked
+  into `~/.claude/skills/` at all. A frozen snapshot is kept in [`deprecated/`](deprecated/) for
+  history; don't edit that copy.
 
 ## User prompt
 
@@ -76,9 +78,15 @@ mkdir -p ~/.claude/skills
 ln -s "$PWD/<skill>" ~/.claude/skills/<skill>
 ```
 
-A skill can live in any repo — `ja-changelog` now symlinks to `…/erlia/ja-changelog/skill`. Edits to
-the target are picked up live within a session. Creating `~/.claude/skills/` for the first time
+A skill can live in any repo; the link just has to point at its `SKILL.md` directory. Edits to the
+target are picked up live within a session. Creating `~/.claude/skills/` for the first time
 requires restarting Claude Code once so the new directory gets watched.
+
+**A skill that only makes sense inside one project belongs to that project, not to
+`~/.claude/skills/`.** Commit the symlink in the project instead — `erliamx/ja-changelog` carries
+`.claude/skills/ja-changelog -> ../../skill` in git — and it arrives with the clone, versions with
+the code it drives, and needs nothing installed per machine. User-level linking is for the skills
+that are useful everywhere, which is what this repo holds.
 
 Link to the **main clone**, not a worktree: the worktree goes away when its branch lands, and the
 link dies with it. After that, `/sync-config` keeps the install current — it pulls the repos behind
