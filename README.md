@@ -10,6 +10,9 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
   contract, parallel fan-out and worktree isolation, and how the orchestrator verifies and relays
   results without re-reading everything.
 
+- **[`sitrep`](sitrep/SKILL.md)** — succinct state of the work: what's done, what remains, what
+  needs your decision. Three capped sections, grounded in git/PR/CI state rather than recollection.
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
