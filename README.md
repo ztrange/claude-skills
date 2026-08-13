@@ -17,6 +17,10 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
 
+- **[`handoff`](handoff/SKILL.md)** — a paste-ready prompt that resumes the work in a fresh
+  context (new session, or after `/clear`): objective, observed state, the next concrete action,
+  and the dead ends worth not repeating.
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
