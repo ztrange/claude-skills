@@ -25,6 +25,11 @@ edits are live — there is no build or install step for day-to-day use.
   context (new session, or after `/clear`): objective, observed state, the next concrete action,
   and the dead ends worth not repeating.
 
+- **[`install-guardrails`](install-guardrails/SKILL.md)** — make the rules enforceable instead of
+  remembered: a `reference-transaction` hook that refuses commits on `main` even under
+  `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
+  optional GitHub branch protection for the layer that can't be bypassed locally.
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
