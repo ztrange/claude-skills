@@ -33,7 +33,10 @@ edits are live — there is no build or install step for day-to-day use.
 - **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
-  optional GitHub branch protection for the layer that can't be bypassed locally.
+  optional GitHub branch protection for the layer that can't be bypassed locally. Its
+  [`scripts/test-guardrail.sh`](setup-git-guardrail/scripts/test-guardrail.sh) builds a throwaway
+  repo, installs the hook bodies extracted from `SKILL.md`, and asserts all 23 behaviours — run it
+  before changing the skill.
 
 - **[`sync-config`](sync-config/SKILL.md)** — bring the installed config up to date: pull the repos
   behind the symlinks in `~/.claude/`, report what changed (trigger descriptions, global prompt
