@@ -1,7 +1,11 @@
 # skills
 
-Git-versioned [Claude Code skills](https://code.claude.com/docs/en/skills). Each top-level folder
-is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
+Git-versioned [Claude Code](https://code.claude.com/docs/en/skills) configuration: the skills I
+use, plus my global user prompt. Everything here is loaded by symlinking it into `~/.claude/`, so
+edits are live — there is no build or install step for day-to-day use.
+
+- Each top-level folder is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
+- `user-prompt/` is the exception: it holds the global user prompt, not a skill.
 
 ## Skills
 
@@ -24,6 +28,24 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
+
+## User prompt
+
+[`user-prompt/CLAUDE.md`](user-prompt/CLAUDE.md) is my global user prompt — the standing
+instructions Claude Code loads for *every* project on this machine (how to write, git and PR
+rules, verification standards, what to do when I push back). It is tracked here so changes to it
+are reviewable and revertable like any other code.
+
+Install it the same way as a skill, by symlink:
+
+```bash
+mv ~/.claude/CLAUDE.md ~/.claude/CLAUDE.md.bak   # first time only, if a real file is there
+ln -s "$PWD/user-prompt/CLAUDE.md" ~/.claude/CLAUDE.md
+```
+
+Once symlinked, editing `user-prompt/CLAUDE.md` changes the live prompt immediately — a new
+session picks it up, no restart needed. Scope check before adding a rule: this file applies
+everywhere, so anything that is only true for one repo belongs in that repo's own `CLAUDE.md`.
 
 ## Use in Claude Code (live, no rebuild)
 
