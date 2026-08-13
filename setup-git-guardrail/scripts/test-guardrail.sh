@@ -82,6 +82,25 @@ refused() {  # refused <desc> -- <git args...>   : must exit non-zero AND leave 
 allowed() { local desc=$1; shift; [ "$1" = -- ] && shift
   if git -C "$PRI" "$@" >/dev/null 2>&1; then ok "$desc"; else bad "$desc" "expected success, got exit $?"; fi; }
 
+# refused_saying <desc> <must-match ERE|-> <must-NOT-match ERE|-> -- <git args...>
+#
+# Everything refused() asserts, plus the content of the message. Two directions, and the NEGATIVE
+# one is the point: a refused plain `git commit` must not advise `reset --hard`, because there the
+# dirty tree is the user's own work and the advice would delete exactly what they tried to commit.
+# refused() pipes stderr to /dev/null, so no assertion here could be made through it.
+refused_saying() {
+  local desc=$1 want=$2 avoid=$3; shift 3; [ "$1" = -- ] && shift
+  local before out rc flat
+  before=$(gs)
+  out=$(git -C "$PRI" "$@" 2>&1 >/dev/null); rc=$?
+  flat=$(tr '\n' '|' <<<"$out")
+  if   [ "$rc" = 0 ];                                            then bad "$desc" "command succeeded; expected refusal"
+  elif [ "$(gs)" != "$before" ];                                 then bad "$desc" "refused but main moved $before -> $(gs)"
+  elif [ "$want"  != - ] && ! grep -Eq "$want"  <<<"$out";        then bad "$desc" "message lacks /$want/ — got: $flat"
+  elif [ "$avoid" != - ] &&   grep -Eq "$avoid" <<<"$out";        then bad "$desc" "message offers /$avoid/, destructive here — got: $flat"
+  else ok "$desc"; fi
+}
+
 # --- build the lab -----------------------------------------------------------------------------
 mkdir -p "$UP" && git -C "$UP" init -q -b main .
 git -C "$UP" config user.email t@example.com; git -C "$UP" config user.name t
@@ -103,20 +122,51 @@ if git -C "$WT" commit -q -m probe 2>/dev/null; then ok "commit in a linked work
 else bad "commit in a linked worktree" "the whole point of the guardrail; hooks must exit 0 here"; fi
 PROBE=$(git -C "$WT" rev-parse HEAD)
 
+# git stash finishes by resetting the worktree to HEAD, which opens a no-op transaction on
+# refs/heads/main. v3 refused it: the stash was created and the tree cleaned, but the command
+# exited 1 and blamed 'commit'. The retry a user then makes reports "No local changes to save".
+head_ "git stash (v3 refused this after it had already stashed)"
+echo scratch > "$PRI/gr-stash.txt"; g add gr-stash.txt
+SB=$(gs)
+if git -C "$PRI" stash push -m gr-probe >/dev/null 2>&1; then
+  if [ -z "$(git -C "$PRI" status --porcelain)" ] && [ "$(git -C "$PRI" stash list | wc -l | tr -d ' ')" = 1 ]; then
+    ok "git stash push exits 0, stashes, and cleans the tree"
+  else bad "git stash push exits 0, stashes, and cleans the tree" "exit 0 but state wrong: '$(git -C "$PRI" status --porcelain)' / $(git -C "$PRI" stash list | wc -l) entries"; fi
+else bad "git stash push exits 0, stashes, and cleans the tree" "exit non-zero — the 'old = new' guard is missing from reference-transaction"; fi
+allowed "git stash pop brings the work back" -- stash pop
+[ "$(gs)" = "$SB" ] && ok "the stash round-trip left main unmoved" \
+                    || bad "the stash round-trip left main unmoved" "main $SB -> $(gs)"
+g rm -qf --cached gr-stash.txt; rm -f "$PRI/gr-stash.txt"; g restore --source=HEAD --staged --worktree .
+
 head_ "Refused in the primary clone (section 4 table)"
-refused "git commit"                         -- commit --allow-empty -m probe
-refused "git commit --no-verify"             -- commit --allow-empty --no-verify -m probe
+# The message assertions ride along here rather than in a section of their own: the whole point of
+# v4 is that these are the moments a message is read, so assert content where the refusal happens.
+refused_saying "git commit"                  'refused: this is the primary clone' 'reset --hard|git restore' \
+                                             -- commit --allow-empty -m probe
+refused_saying "git commit --no-verify"      'DISCARDS uncommitted changes'       'cherry-pick --abort' \
+                                             -- commit --allow-empty --no-verify -m probe
 refused "git commit --amend"                 -- commit --amend --no-edit
-refused "git merge --no-ff"                  -- merge --no-ff probe/guardrail
-g merge --quit
-refused "git cherry-pick"                    -- cherry-pick "$PROBE"
-g cherry-pick --quit
-refused "git revert"                         -- revert --no-edit HEAD
+refused_saying "git merge --no-ff"           'git merge --abort'                  - \
+                                             -- merge --no-ff probe/guardrail
+# TEARDOWN IS LOAD-BEARING between these. A refused merge/cherry-pick leaves the tree dirty, and
+# git then refuses the NEXT probe on its own ("local changes would be overwritten by cherry-pick")
+# before any hook runs. That still exits non-zero with main unmoved, so a bare refused() passes it
+# while testing nothing. Assert the tree is clean before each probe rather than trusting it.
+clean_or_die() { [ -z "$(git -C "$PRI" status --porcelain)" ] && return 0
+  bad "teardown before '$1'" "tree still dirty: $(git -C "$PRI" status --porcelain | tr '\n' ' ')"; }
+g merge --abort;       clean_or_die "git cherry-pick"
+refused_saying "git cherry-pick"             'git cherry-pick --abort'            - \
+                                             -- cherry-pick "$PROBE"
+g cherry-pick --abort; clean_or_die "git revert"
+refused_saying "git revert"                  'DISCARDS uncommitted changes'       'cherry-pick --abort' \
+                                             -- revert --no-edit HEAD
+g reset --hard HEAD;   clean_or_die "git reset --hard"
 refused "git reset --hard"                   -- reset --hard HEAD~1
-g restore --source=HEAD --staged --worktree .
+g reset --hard HEAD
 git -C "$PRI" merge --squash probe/guardrail >/dev/null 2>&1
-refused "git merge --squash + commit"        -- commit -m probe
-g merge --quit; g restore --source=HEAD --staged --worktree .; rm -f "$PRI/f4.txt"
+refused_saying "git merge --squash + commit" 'git merge --abort \|\| git reset'   - \
+                                             -- commit -m probe
+g reset --hard HEAD; rm -f "$PRI/f4.txt"
 
 # --- documented sharp edges: assert them, so a git change that fixes them shows up here ---------
 head_ "Documented sharp edges (section 4: refused != no-op)"
@@ -127,17 +177,23 @@ if grep -q PRECIOUS "$PRI/f1.txt" 2>/dev/null; then
 else ok "reset --hard destroys uncommitted work (known, documented)"; fi
 if [ -n "$(git -C "$PRI" status --porcelain)" ]; then ok "reset --hard leaves the index dirty (known)"
 else bad "reset --hard leaves the index dirty" "no longer reproduces; section 4 may be stale"; fi
-if g reset --hard HEAD; then bad "git reset --hard HEAD is refused" "it succeeded; the documented recovery advice is now wrong"
-else ok "git reset --hard HEAD is itself refused (no-op ref still transacts)"; fi
 allowed "git restore ... recovers (touches no refs)" -- restore --source=HEAD --staged --worktree .
+# v3 refused this: a no-op ref still opens a transaction. v4's 'old = new' guard permits it, which
+# is what lets the messages advise a command people already know.
+echo TRANSIENT >> "$PRI/f1.txt"
+allowed "git reset --hard HEAD recovers (v4: old = new)" -- reset --hard HEAD
+if [ -z "$(git -C "$PRI" status --porcelain)" ]; then ok "reset --hard HEAD left the tree clean"
+else bad "reset --hard HEAD left the tree clean" "still dirty: $(git -C "$PRI" status --porcelain)"; fi
 
 g merge --no-ff probe/guardrail
 if [ -f "$(gitdir "$PRI")/MERGE_HEAD" ]; then ok "refused merge leaves MERGE_HEAD (known)"
 else bad "refused merge leaves MERGE_HEAD" "no longer reproduces; section 4 teardown may be stale"; fi
-if g merge --abort; then bad "git merge --abort is refused" "it succeeded; --quit guidance can be relaxed"
-else ok "git merge --abort is itself refused (known)"; fi
-allowed "git merge --quit clears the state"          -- merge --quit
-g restore --source=HEAD --staged --worktree .
+# v3 refused this — --abort ends in a reset to HEAD, a no-op transaction — and the primary stayed
+# wedged mid-merge with only the core.hooksPath bypass on offer. That is the bug v4 started from.
+allowed "git merge --abort clears a refused merge (v4)" -- merge --abort
+if [ -z "$(git -C "$PRI" status --porcelain)" ] && [ ! -f "$(gitdir "$PRI")/MERGE_HEAD" ]; then
+  ok "...and leaves no MERGE_HEAD and a clean tree"
+else bad "...and leaves no MERGE_HEAD and a clean tree" "tree '$(git -C "$PRI" status --porcelain | tr '\n' ' ')'"; fi
 
 # --- the load-bearing test: pull --ff-only must still fast-forward ------------------------------
 head_ "pull --ff-only (the regression that matters)"
@@ -177,6 +233,25 @@ git -C "$LAB/canary" -c core.hooksPath=/dev/null reset --hard origin/main >/dev/
 if git -C "$LAB/canary" pull --ff-only >/dev/null 2>&1; then
   ok "up-to-date pull passes even with the broken hook (why section 7 needs a BEHIND clone)"
 else bad "up-to-date pull passes with the broken hook" "expected a vacuous pass; the premise changed"; fi
+
+# Guard the guard, again: strip ONLY the 'old = new' line from the real body and prove the stash
+# test above fails. Without this, a future edit that drops the guard passes the suite if some other
+# change happens to keep stash working.
+head_ "The 'old = new' guard is load-bearing (v3 regression)"
+grep -v '\[ "\$old" = "\$new" \]' "$LAB/hooks/reftxn" > "$LAB/hooks/noguard"; chmod 755 "$LAB/hooks/noguard"
+if [ "$(wc -l < "$LAB/hooks/noguard")" -lt "$(wc -l < "$LAB/hooks/reftxn")" ]; then
+  ok "the guard line was found and stripped for the canary"
+else bad "the guard line was found and stripped for the canary" "grep matched nothing — the line was reworded, fix this pattern"; fi
+git clone -q "$PRI" "$LAB/stash-canary"
+git -C "$LAB/stash-canary" config user.email t@example.com; git -C "$LAB/stash-canary" config user.name t
+install_hooks "$LAB/stash-canary" "$LAB/hooks/noguard"
+echo scratch > "$LAB/stash-canary/gr.txt"; git -C "$LAB/stash-canary" add gr.txt
+if git -C "$LAB/stash-canary" stash push -m canary >/dev/null 2>&1; then
+  bad "a guard-free hook FAILS the stash test (so it is not vacuous)" "stash push exited 0 without the guard; the test proves nothing"
+else ok "a guard-free hook FAILS the stash test (so it is not vacuous)"; fi
+if [ "$(git -C "$LAB/stash-canary" stash list | wc -l | tr -d ' ')" = 1 ]; then
+  ok "...and it stashed anyway — refused-but-effective, the v3 failure mode"
+else bad "...and it stashed anyway — refused-but-effective" "no stash entry; the failure mode changed"; fi
 
 # --- the hooks-path resolution bug the installer snippets have to avoid -------------------------
 head_ "Hooks-path resolution (sections 5 and 6)"

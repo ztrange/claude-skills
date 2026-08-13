@@ -35,8 +35,9 @@ edits are live — there is no build or install step for day-to-day use.
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
   optional GitHub branch protection for the layer that can't be bypassed locally. Its
   [`scripts/test-guardrail.sh`](setup-git-guardrail/scripts/test-guardrail.sh) builds a throwaway
-  repo, installs the hook bodies extracted from `SKILL.md`, and asserts all 23 behaviours — run it
-  before changing the skill.
+  repo, installs the hook bodies extracted from `SKILL.md`, and asserts all 30 behaviours —
+  including what each refusal *says*, since the message is the whole interface — run it before
+  changing the skill.
 
 - **[`sync-config`](sync-config/SKILL.md)** — bring the installed config up to date: pull the repos
   behind the symlinks in `~/.claude/`, report what changed (trigger descriptions, global prompt
