@@ -69,6 +69,10 @@ sessions reopen from the Archived list, so it is not a delete. So:
   deliberately nothing running — that is what steps 2–4 establish — so unqualified "stops the
   process" reads as though a build, server or job of the user's is about to be killed. The gate
   exists because the call is irreversible *within* the conversation, not because it endangers work.
+- **The ask is a confirmation, not a warning.** Closing the session is what the user asked for, so
+  don't argue against it, don't lead with what archiving costs, and don't offer "keep it open" as
+  the safer choice. Steps 2–4 already established there is nothing to lose; if they hadn't, you
+  would have stopped there instead of reaching this step.
 - Never archive over unmerged, unpushed, or uncommitted work — steps 2–4 must have passed.
 - If the user does this after every merged PR, mention the "Auto-archive on PR close" preference
   in Settings once, then stop suggesting it.
