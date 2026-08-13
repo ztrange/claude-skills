@@ -2,8 +2,10 @@
 name: install-guardrails
 description: >-
   Install git hooks that keep the primary clone parked on `main` and push all work into worktrees:
-  a `pre-commit` that refuses any commit made in the primary clone, and a `post-checkout` that says
-  so loudly when the primary drifts off `main`. Use when the user says "install guardrails",
+  a `pre-commit` and `pre-merge-commit` that refuse any commit made in the primary clone, a
+  `reference-transaction` hook that catches the paths those never see (`cherry-pick`, `revert`,
+  `reset --hard`, `--no-verify`), and a `post-checkout` that says so loudly when the primary
+  drifts off `main`. Use when the user says "install guardrails",
   "protect main", "prevent commits to main", "stop me committing in the primary clone", "add the
   git hooks", "set up branch protection", or "instala los guardrails". Checks what git already
   enforces before installing anything, verifies by testing the failure path — including that
@@ -83,50 +85,71 @@ exit 0
 `git merge --no-ff` lands on `main` untouched without it. Install the same body under both names.
 A squash merge is caught by `pre-commit`, since it ends in an ordinary commit.
 
-Document the `--no-verify` escape in the hook's own error message, as above. A guard whose bypass
-is stated is a design choice, not a weakness: it makes the common accident loud without standing
-between someone and an unusual but intentional action.
+On its own this family is bypassed by `--no-verify`, which the error message above states openly —
+a guard whose bypass is documented makes the common accident loud without standing between someone
+and a deliberate act. Section 4 closes that bypass along with three paths these hooks never see.
+Decide which of the two behaviours is wanted before installing both.
 
-## 4. Why not `reference-transaction` — measured, not assumed
+## 4. The second mechanism — neither one is enough alone
 
-It looks strictly better: the one hook `--no-verify` cannot skip, and unlike `post-checkout` it
-appears able to refuse a branch switch outright. It was built and run head-to-head against the
-hooks above. **It is worse.** The results, on git 2.50.1:
+`pre-commit` never runs for `cherry-pick`, `revert` or `reset --hard`, so all three land on `main`
+in the primary clone untouched. Measured: `main` went from 1 commit to 3 with the hooks above
+installed. A `reference-transaction` hook catches exactly those, because they are ref updates:
 
-| Operation | `pre-commit` (shipped) | `reference-transaction` |
+```sh
+#!/bin/sh
+[ "$1" = prepared ] || exit 0
+gd=$(cd "$(git rev-parse --git-dir)" && pwd); cm=$(cd "$(git rev-parse --git-common-dir)" && pwd)
+[ "$gd" = "$cm" ] || exit 0
+while read -r old new ref; do
+  case "$ref" in refs/heads/*) ;; *) continue ;; esac
+  [ "$old" = 0000000000000000000000000000000000000000 ] && continue   # branch creation, and worktree add -b
+  case "${GIT_REFLOG_ACTION-}" in pull*|merge*|fetch*) continue ;; esac  # remote sync, allowlisted
+  echo "  refused: '${GIT_REFLOG_ACTION:-commit}' would move ${ref#refs/heads/} in the primary clone" >&2
+  exit 1
+done
+exit 0
+```
+
+**The allowlist is the load-bearing detail.** Testing `GIT_REFLOG_ACTION` for mere presence lets
+`cherry-pick` and `revert` straight through — they set it. Only `pull`, `merge` and `fetch` may
+move a branch here; everything else, including an unset action (a plain commit), is refused.
+
+Neither mechanism subsumes the other:
+
+| Path | `pre-commit` family | `reference-transaction` |
 |---|---|---|
-| commit in the primary clone | refused | refused |
-| `commit --no-verify` | allowed — the documented escape | **refused** ← its only win |
-| `commit --amend` | refused | **allowed** ← blind spot |
-| `reset --hard HEAD~1` | allowed | **refused** ← false refusal |
-| `worktree add -b`, `branch`, `pull --ff-only` | allowed | allowed, once the `HEAD` guard is dropped |
-| refuse a branch *switch* | no | no — see below |
+| `git commit` | refused | refused |
+| `git commit --no-verify` | **slips** | refused |
+| `git commit --amend` | refused | **blind** — fires no ref transaction at all |
+| `git cherry-pick` / `git revert` | **slips** — hook never runs | refused |
+| `git reset --hard` | **slips** | refused |
+| `git merge --no-ff` | refused, via `pre-merge-commit` | refused |
+| `git merge --squash` + commit | refused | refused |
+| `pull --ff-only`, `worktree add -b`, commit in a worktree | allowed | allowed |
 
-Three findings decide it, each reproduced:
+Install all four hooks. Verified together: every refusal above holds and all three permitted
+operations work.
 
-- **`git commit --amend` fires no ref transaction at all.** A plain commit fires one for
-  `refs/heads/main`; amend fires none, in any state. The guard cannot see the operation, so no
-  amount of tuning catches it. `pre-commit` does run on amend and refuses it.
-- **The switch guard is unusable.** `git switch` and `git worktree add -b` present the hook with
-  identical `PWD`, `GIT_DIR`, `rev-parse --git-dir` and environment — there is nothing to
-  discriminate on. Guarding `HEAD` therefore refuses the exact command the guardrail exists to
-  encourage. Dropping the `HEAD` guard fixes that, and gives up the one capability that made the
-  mechanism attractive.
-- **It refuses `git reset --hard`**, which leaves `GIT_REFLOG_ACTION` unset exactly like a commit.
-  Legitimate local surgery, blocked.
+Two things this costs, both worth saying out loud when installing:
 
-So it trades a documented escape hatch for an undocumented one (`-c core.hooksPath=/dev/null`),
-gains resistance to `--no-verify`, and pays with a blind spot and a false refusal. Not a trade
-worth making. Recorded here because the idea is genuinely tempting and will come back.
+- **`--no-verify` no longer bypasses.** The escape becomes `git -c core.hooksPath=/dev/null …`,
+  which is not discoverable from the error message. Put it in the message.
+- **A branch *switch* still cannot be blocked.** Guarding `HEAD` here refuses `git worktree add -b`
+  as well: that command and `git switch` present the hook with identical `PWD`, `GIT_DIR`,
+  `rev-parse --git-dir` and environment, so there is nothing to discriminate on. `post-checkout`
+  warning after the fact remains the only option.
 
 ## 5. Where the hooks live
 
 Hooks live in the common git dir, so **one install covers every worktree** of the repo:
 
 ```bash
-install -m 755 <hook> "$(git rev-parse --git-common-dir)/hooks/pre-commit"
-install -m 755 <hook> "$(git rev-parse --git-common-dir)/hooks/pre-merge-commit"
-install -m 755 <warn> "$(git rev-parse --git-common-dir)/hooks/post-checkout"
+H="$(git rev-parse --git-common-dir)/hooks"
+install -m 755 <refuse>  "$H/pre-commit"
+install -m 755 <refuse>  "$H/pre-merge-commit"
+install -m 755 <reftxn>  "$H/reference-transaction"
+install -m 755 <warn>    "$H/post-checkout"
 ```
 
 To version the hooks instead, keep a tracked `.githooks/` and point git at it — but know the
@@ -148,10 +171,13 @@ Installing is not evidence. In the repo you just installed into:
 
 ```bash
 git commit --allow-empty -m probe              # in the primary: must be REFUSED
-git commit --allow-empty --no-verify -m probe  # allowed, by design — the documented escape
+git commit --allow-empty --no-verify -m probe  # must be REFUSED once reference-transaction is in
 git pull --ff-only                             # must SUCCEED — this is the one people break
 git merge --no-ff <any branch>                  # must be REFUSED — needs pre-merge-commit
-git commit --amend --no-edit                   # must be REFUSED
+git commit --amend --no-edit                   # must be REFUSED — pre-commit only
+git cherry-pick <any commit>                   # must be REFUSED — reference-transaction only
+git revert --no-edit HEAD                      # must be REFUSED — reference-transaction only
+git reset --hard HEAD~1                        # must be REFUSED — reference-transaction only
 cd <a worktree> && git commit --allow-empty -m probe   # must SUCCEED
 ```
 
@@ -176,8 +202,11 @@ locks the owner out of their own direct pushes — the point, but their call to 
 
 - `-c core.hooksPath=/dev/null` bypasses all of it. Guardrail, not a boundary.
 - Hooks are not cloned; every machine needs the install run again.
-- `pre-commit` cannot stop a branch *switch*; `post-checkout` only notices one after the fact.
-  The primary drifting off `main` is warned about, never prevented. See section 4 for why the hook that
-  could prevent it was rejected.
-- Prior art in this setup: `erlia/ja-changelog/.githooks/` — the same two hooks, with the
-  incident that motivated them recorded in the hook's own comments. Read it before writing new ones.
+- No hook can stop a branch *switch*. `post-checkout` only notices after the fact, and guarding
+  `HEAD` in `reference-transaction` also refuses `git worktree add -b` — the two are
+  indistinguishable there. Drift off `main` is warned about, never prevented.
+- `git commit --amend` fires no ref transaction at all, so `reference-transaction` is blind to it.
+  That is why the `pre-commit` family stays even after installing the stronger hook.
+- Prior art in this setup: `erlia/ja-changelog/.githooks/` — the `pre-commit` / `post-checkout`
+  pair, with the incident that motivated it recorded in the hook's own comments. Read it first. It
+  predates the `cherry-pick` / `revert` finding and does not cover those.
