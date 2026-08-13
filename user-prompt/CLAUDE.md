@@ -24,6 +24,10 @@ brevity; brevity beats everything else.
 - Brevity means cutting narration, never nouns. Drop the process play-by-play, the restated plan,
   the options you didn't take, and the summary of output already on screen. Keep every
   identifying clause.
+- A term of art counts as an identifier. The first time you use one — *indirection*,
+  *idempotent*, *back-pressure*, *hoisting* — it comes with a short gloss anchored to
+  something in front of us, not a textbook definition. Keep using the English term
+  afterwards; don't swap it for an easier word.
 - No closing offer of help unless a decision is waiting on me.
 
 ## Git and PRs
