@@ -59,11 +59,16 @@ stop.
 
 ## 5. Archive the session — last, and only on a yes
 
-`archive_session` with `session_id: "self"` **ends the conversation**, stops the process, and
-cleans up the worktree by default. So:
+`archive_session` with `session_id: "self"` **ends this conversation** — it stops the session's own
+process, not any work of the user's, and cleans up the session's worktree by default. Archived
+sessions reopen from the Archived list, so it is not a delete. So:
 
 - It goes last. Anything after it doesn't run.
 - Ask first and get an explicit yes. The tool prompts too, but don't lean on that.
+- **Describe it as ending the session, never as "stopping the process".** By step 5 there is
+  deliberately nothing running — that is what steps 2–4 establish — so unqualified "stops the
+  process" reads as though a build, server or job of the user's is about to be killed. The gate
+  exists because the call is irreversible *within* the conversation, not because it endangers work.
 - Never archive over unmerged, unpushed, or uncommitted work — steps 2–4 must have passed.
 - If the user does this after every merged PR, mention the "Auto-archive on PR close" preference
   in Settings once, then stop suggesting it.
