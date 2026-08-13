@@ -30,6 +30,11 @@ edits are live — there is no build or install step for day-to-day use.
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
   optional GitHub branch protection for the layer that can't be bypassed locally.
 
+- **[`sync-config`](sync-config/SKILL.md)** — bring the installed config up to date: pull the repos
+  behind the symlinks in `~/.claude/`, report what changed (trigger descriptions, global prompt
+  rules, new skills), then reconcile the links — add the missing ones, remove only the dangling
+  ones, always pointing at the main clone.
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
@@ -65,6 +70,10 @@ ln -s "$PWD/<skill>" ~/.claude/skills/<skill>
 A skill can live in any repo — `ja-changelog` now symlinks to `…/erlia/ja-changelog/skill`. Edits to
 the target are picked up live within a session. Creating `~/.claude/skills/` for the first time
 requires restarting Claude Code once so the new directory gets watched.
+
+Link to the **main clone**, not a worktree: the worktree goes away when its branch lands, and the
+link dies with it. After that, `/sync-config` keeps the install current — it pulls the repos behind
+the links, says what changed, and adds or prunes links to match.
 
 ## Build a bundle for Cowork
 
