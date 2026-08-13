@@ -13,6 +13,10 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
 - **[`sitrep`](sitrep/SKILL.md)** — succinct state of the work: what's done, what remains, what
   needs your decision. Three capped sections, grounded in git/PR/CI state rather than recollection.
 
+- **[`wrap-up`](wrap-up/SKILL.md)** — close out finished work: land the change, clean scratch
+  files, remove the git worktree, archive the session. Fails closed on anything unmerged,
+  unpushed, or uncommitted.
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
   [`deprecated/`](deprecated/) for history; don't edit that copy.
