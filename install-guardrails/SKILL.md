@@ -79,35 +79,54 @@ branch=$(git rev-parse --abbrev-ref HEAD)
 exit 0
 ```
 
+`pre-commit` does not run for merge commits — git calls `pre-merge-commit` for those, so
+`git merge --no-ff` lands on `main` untouched without it. Install the same body under both names.
+A squash merge is caught by `pre-commit`, since it ends in an ordinary commit.
+
 Document the `--no-verify` escape in the hook's own error message, as above. A guard whose bypass
 is stated is a design choice, not a weakness: it makes the common accident loud without standing
 between someone and an unusual but intentional action.
 
-## 4. Why not `reference-transaction` — the tempting wrong answer
+## 4. Why not `reference-transaction` — measured, not assumed
 
-It looks strictly better. It is the one hook `--no-verify` cannot skip, and unlike `post-checkout`
-it **can** refuse a branch switch outright: it sees `HEAD → ref:refs/heads/<name>` in the
-`prepared` state, and aborting leaves HEAD where it was. Both verified on git 2.50.1.
+It looks strictly better: the one hook `--no-verify` cannot skip, and unlike `post-checkout` it
+appears able to refuse a branch switch outright. It was built and run head-to-head against the
+hooks above. **It is worse.** The results, on git 2.50.1:
 
-It was still cut from this skill, because guarding `refs/heads/*` there refuses a long tail of
-legitimate operations. Each of these was measured, not predicted:
+| Operation | `pre-commit` (shipped) | `reference-transaction` |
+|---|---|---|
+| commit in the primary clone | refused | refused |
+| `commit --no-verify` | allowed — the documented escape | **refused** ← its only win |
+| `commit --amend` | refused | **allowed** ← blind spot |
+| `reset --hard HEAD~1` | allowed | **refused** ← false refusal |
+| `worktree add -b`, `branch`, `pull --ff-only` | allowed | allowed, once the `HEAD` guard is dropped |
+| refuse a branch *switch* | no | no — see below |
 
-| Operation | Why it broke |
-|---|---|
-| `git pull --ff-only` | Fast-forwarding `main` is a ref update. Needs a `GIT_REFLOG_ACTION` test — unset for a commit, set for merge/pull |
-| `git branch feat` | Branch creation writes `refs/heads/feat` with no reflog action. Needs an `old = 0{40}` test |
-| `git worktree add -b` | Sets the new worktree's `HEAD` through a transaction the hook sees as the *primary* clone — so a `HEAD` guard refuses the exact command the guardrail exists to encourage |
+Three findings decide it, each reproduced:
 
-The first two have clean fixes. The third does not, and three false refusals in eight test cases is
-the shape of a mechanism that will keep finding new ones. Use it only if blocking a *switch* is a
-hard requirement, and only after testing every workflow the repo actually runs.
+- **`git commit --amend` fires no ref transaction at all.** A plain commit fires one for
+  `refs/heads/main`; amend fires none, in any state. The guard cannot see the operation, so no
+  amount of tuning catches it. `pre-commit` does run on amend and refuses it.
+- **The switch guard is unusable.** `git switch` and `git worktree add -b` present the hook with
+  identical `PWD`, `GIT_DIR`, `rev-parse --git-dir` and environment — there is nothing to
+  discriminate on. Guarding `HEAD` therefore refuses the exact command the guardrail exists to
+  encourage. Dropping the `HEAD` guard fixes that, and gives up the one capability that made the
+  mechanism attractive.
+- **It refuses `git reset --hard`**, which leaves `GIT_REFLOG_ACTION` unset exactly like a commit.
+  Legitimate local surgery, blocked.
+
+So it trades a documented escape hatch for an undocumented one (`-c core.hooksPath=/dev/null`),
+gains resistance to `--no-verify`, and pays with a blind spot and a false refusal. Not a trade
+worth making. Recorded here because the idea is genuinely tempting and will come back.
 
 ## 5. Where the hooks live
 
 Hooks live in the common git dir, so **one install covers every worktree** of the repo:
 
 ```bash
-install -m 755 <hook> "$(git rev-parse --git-common-dir)/hooks/<name>"
+install -m 755 <hook> "$(git rev-parse --git-common-dir)/hooks/pre-commit"
+install -m 755 <hook> "$(git rev-parse --git-common-dir)/hooks/pre-merge-commit"
+install -m 755 <warn> "$(git rev-parse --git-common-dir)/hooks/post-checkout"
 ```
 
 To version the hooks instead, keep a tracked `.githooks/` and point git at it — but know the
@@ -131,6 +150,8 @@ Installing is not evidence. In the repo you just installed into:
 git commit --allow-empty -m probe              # in the primary: must be REFUSED
 git commit --allow-empty --no-verify -m probe  # allowed, by design — the documented escape
 git pull --ff-only                             # must SUCCEED — this is the one people break
+git merge --no-ff <any branch>                  # must be REFUSED — needs pre-merge-commit
+git commit --amend --no-edit                   # must be REFUSED
 cd <a worktree> && git commit --allow-empty -m probe   # must SUCCEED
 ```
 
