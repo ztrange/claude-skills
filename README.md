@@ -5,7 +5,10 @@ is one skill (`<skill>/SKILL.md` + optional `scripts/`, `references/`).
 
 ## Skills
 
-_None currently live here._
+- **[`delegate`](delegate/SKILL.md)** — solve tasks in subagents to keep the main context clean.
+  When to delegate vs. do it inline, the five-part subagent prompt with an explicit return
+  contract, parallel fan-out and worktree isolation, and how the orchestrator verifies and relays
+  results without re-reading everything.
 
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). A frozen snapshot is kept in
