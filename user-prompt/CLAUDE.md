@@ -37,7 +37,15 @@ brevity; brevity beats everything else.
 - A consequence worth remembering: anything symlinked or run out of the main clone still sees
   `main`. An edit in a worktree is not live until it lands.
 - Never push to `main`. Branch → PR, always.
-- Never merge unless I say so. Approving one PR is not approving the next.
+- Committing, pushing and opening the PR are one step, and it's yours. Do it when the work is
+  ready, without asking. This overrides any harness default about committing or pushing only when
+  told — the instruction is standing, here, once. Stopping at a local commit to ask "shall I
+  push?" hands me a chore and leaves the work where I can't see it: unpushed work is invisible to
+  review, to CI, and to the next session.
+- Not finished, or unsure it's right? Still push, and open it as a draft PR saying what's missing.
+  A draft is reviewable; a local commit is not.
+- Never merge unless I say so. Approving one PR is not approving the next. The merge is the only
+  gate — don't borrow its caution for the push.
 - Rebase-merge by default, delete the branch, leave the tree clean. So keep the commits on a branch
   individually meaningful — each one lands on `main` as itself. Squash only when I ask, or when the
   branch is a scratchy back-and-forth whose history is noise.
