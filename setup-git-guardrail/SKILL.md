@@ -59,17 +59,35 @@ Two hooks, both keyed on the primary-clone test. `pre-commit` refuses:
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v3 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
 git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
 common_dir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$git_dir" = "$common_dir" ] || exit 0     # linked worktree: this is where work belongs
+case "${0##*/}" in pre-merge-commit) op=merge ;; *) op=commit ;; esac   # name the right bypass
 echo "  refused: this is the primary clone; it exists to sit on main and hold it." >&2
 echo "    git worktree add .claude/worktrees/<task> -b claude/<task> origin/main" >&2
 echo "    to update the primary, never merge:  git pull --ff-only" >&2
+if [ "$op" = merge ] || [ -e "$git_dir/SQUASH_MSG" ]; then
+  echo "    the merge is half-applied; undo it before anything else:" >&2
+  echo "    git merge --abort || git reset --hard HEAD   # the fallback DISCARDS uncommitted work" >&2
+fi
 echo "    --no-verify does NOT bypass this; the escape is:" >&2
-echo "    git -c core.hooksPath=/dev/null commit ..." >&2
+echo "    git -c core.hooksPath=/dev/null $op ..." >&2
 exit 1
 ```
+
+**The merge branch keys on `${0##*/}`, not on `MERGE_HEAD`, because `MERGE_HEAD` does not exist
+yet.** Git writes it *after* the hook refuses, so the commit can be resumed — measured on a diverged
+probe, `pre-merge-commit` sees no `MERGE_HEAD`, `MERGE_MSG` or `SQUASH_MSG`, and the file only
+appears once the refusal has landed. Inside the hook the only thing that distinguishes a merge from
+an ordinary commit is which of the two names the body was invoked under, and `$0` carries that
+exactly. The `SQUASH_MSG` test beside it covers `merge --squash`, which arrives at `pre-commit` with
+the squashed content already staged.
+
+`$op` exists for the same reason. One body under two names would otherwise tell someone whose
+`git merge` was refused that the escape is `core.hooksPath=/dev/null commit` — a bypass that does
+not bypass what they just ran. `--squash` deliberately keeps `op=commit`, because there the user
+really did type `git commit`.
 
 **That message is written for the all-four install of section 4, which is the recommended one.**
 Installing only this family? Then `--no-verify` *does* bypass, and those last two lines have to say
@@ -83,7 +101,7 @@ the one place someone is reading. Args: `$1` old HEAD, `$2` new HEAD, `$3` = 1 f
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v3 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
 [ "$3" = "1" ] || exit 0
 git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
 common_dir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
@@ -111,17 +129,21 @@ installed. A `reference-transaction` hook catches exactly those, because they ar
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v3 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
 [ "$1" = prepared ] || exit 0
 gd=$(cd "$(git rev-parse --git-dir)" && pwd); cm=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$gd" = "$cm" ] || exit 0
 while read -r old new ref; do
   case "$ref" in refs/heads/*) ;; *) continue ;; esac
   [ "$old" = 0000000000000000000000000000000000000000 ] && continue   # branch creation, and worktree add -b
+  [ "$old" = "$new" ] && continue   # ref does not move: cannot touch the graph. git stash, reset --hard HEAD
   case "${GIT_REFLOG_ACTION-}" in pull*|merge*|fetch*) continue ;; esac  # remote sync, allowlisted
   echo "  refused: '${GIT_REFLOG_ACTION:-commit}' would move ${ref#refs/heads/} in the primary clone" >&2
   echo "    work belongs in a worktree; the primary sits on main and holds it:" >&2
   echo "    git worktree add .claude/worktrees/<task> -b claude/<task> origin/main" >&2
+  [ -e "$gd/CHERRY_PICK_HEAD" ] && echo "    still mid-cherry-pick; undo it with:  git cherry-pick --abort" >&2
+  echo "    a refusal is not a no-op — the index and worktree may already be written:" >&2
+  echo "    git status, then  git reset --hard HEAD   # DISCARDS uncommitted changes" >&2
   echo "    --no-verify does NOT bypass this; the escape is:" >&2
   echo "    git -c core.hooksPath=/dev/null <cmd> ..." >&2
   exit 1
@@ -147,6 +169,38 @@ the default: it permits anything git chooses to label, now or in a future versio
 mode is silent permission rather than a noisy refusal. Default to refusing and enumerate the
 exceptions.
 
+### `old = new` is a guard, not an allowlist entry — and skipping it breaks `git stash`
+
+The `[ "$old" = "$new" ]` line is not an exception carved out of the allowlist. It is the invariant
+restated: **a transaction where the ref does not move cannot change the commit graph**, so refusing
+it protects nothing. Unlike the `GIT_REFLOG_ACTION` allowlist, it cannot be widened by a future git
+version relabelling something — it is a property of the transaction itself.
+
+Leaving it out is what v3 did, and it broke `git stash` in the primary clone. `git stash push`
+finishes by resetting the worktree to `HEAD`, which opens a no-op transaction on `refs/heads/main`.
+Measured with the v3 hooks installed and real work in the tree:
+
+| | v3 | v4 |
+|---|---|---|
+| `git stash push` exit code | **1** | 0 |
+| stash entry created | yes | yes |
+| worktree cleaned | yes | yes |
+| message | `refused: 'commit' would move main` | — |
+| the retry a user then makes | `No local changes to save`, **exit 0** | n/a |
+
+That is the worst shape a bug can take here: the stash *worked*, the user was told it failed, and
+the obvious retry reports success while their changes sit unmentioned in `stash@{0}`. It also hit
+the recovery route for the most common refusal there is — someone whose `git commit` was just
+refused reaches for `git stash` to move the work into a worktree.
+
+The same line retires the two sharpest edges in the section below. `git reset --hard HEAD` is now
+permitted, so the recovery advice is a command people already know rather than
+`git restore --source=HEAD --staged --worktree .` — both work, only the reset was refused. And
+`git merge --abort` / `git cherry-pick --abort` work again, because they too finish by resetting to
+`HEAD`. Under v3 the guardrail refused its own teardown and left the primary wedged mid-merge with
+nothing but the `core.hooksPath` bypass on offer; that was the complaint v4 started from, and the
+guard dissolves it rather than documenting around it.
+
 Neither mechanism subsumes the other:
 
 | Path | `pre-commit` family | `reference-transaction` |
@@ -158,6 +212,7 @@ Neither mechanism subsumes the other:
 | `git reset --hard` | **slips** | refused |
 | `git merge --no-ff` | refused, via `pre-merge-commit` | refused |
 | `git merge --squash` + commit | refused | refused |
+| `git stash push` / `git reset --hard HEAD` | allowed | allowed — `old = new`, v4 |
 | `pull --ff-only`, `worktree add -b`, commit in a worktree | allowed | allowed |
 
 Install all four hooks, each carrying the `managed-by` marker from section 6. Verified together: every refusal above holds and all three permitted
@@ -173,16 +228,41 @@ refused and `main` never moved — and the uncommitted edit was gone, with the i
 content staged.
 
 So state the guarantee as **the commit graph is protected**, never as *the command is a no-op*.
-Recovery is `git restore --source=HEAD --staged --worktree .`, which touches no refs and so does
-not trip the hook. `git reset --hard HEAD` does not work here — it opens a ref transaction even
-when old and new are identical, and is refused like any other.
+Recovery is `git reset --hard HEAD`, which v4 permits via the `old = new` guard.
+`git restore --source=HEAD --staged --worktree .` does the same job and touches no refs at all, so
+it works under v3 as well; prefer it in advice aimed at an install you have not verified.
+
+Under v3 the reset was refused — a no-op transaction is still a transaction — which is why v3's
+messages could only ever point at `restore`, and why they mostly pointed at the bypass instead.
 
 The interrupted-operation commands are the same trap one level up. A refused `merge --no-ff` or
-`cherry-pick` leaves `MERGE_HEAD` / `CHERRY_PICK_HEAD` behind, and **`git merge --abort` and
-`git cherry-pick --abort` are themselves refused by this hook** — the guardrail blocks its own
-teardown and the primary stays wedged mid-merge. The way out is `--quit` (`git merge --quit`,
-`git cherry-pick --quit`), which drops the state without touching refs, followed by the `restore`
-above.
+`cherry-pick` leaves `MERGE_HEAD` / `CHERRY_PICK_HEAD` behind and the primary sits mid-operation.
+**Under v3 the guardrail blocked its own teardown** — `--abort` finishes by resetting to `HEAD`, a
+no-op transaction, so the hook refused it and the only way out was `--quit` plus a `restore`.
+
+The `old = new` guard retires that too. Measured on v4:
+
+| after a refused… | `--abort` | leaves |
+|---|---|---|
+| `merge --no-ff` | exit 0, tree clean | `MERGE_HEAD`, `MERGE_MSG` |
+| `cherry-pick` | exit 0, tree clean | `CHERRY_PICK_HEAD` |
+| `merge --squash` + commit | **exit 128** — no `MERGE_HEAD` to abort | `SQUASH_MSG` |
+| `revert` | **exit 128** — nothing in progress | nothing but a dirty tree |
+
+So `--abort` is the recovery where one exists, and `git reset --hard HEAD` is the universal
+fallback: measured, it clears the tree, `MERGE_HEAD`, `MERGE_MSG` and `SQUASH_MSG` in every row
+above. That is why the merge message spells it `git merge --abort || git reset --hard HEAD` — one
+line that is correct in both merge shapes, and copy-pasteable as written.
+
+**The hook bodies now say all of this themselves, conditionally.** That is the whole of v4: a v3
+refusal handed the reader exactly one escape, `core.hooksPath=/dev/null` — the bypass the guardrail
+exists to discourage — while the way out it actually wanted was three lines further down this file.
+The conditions matter as much as the lines. A refused plain `git commit` must **not** print the
+reset advice: there the dirty tree is the user's own work, and `reset --hard HEAD` deletes exactly
+what they were trying to commit. The `reference-transaction` body cannot always tell those apart —
+`commit --no-verify` and `reset --hard` reach it with `GIT_REFLOG_ACTION` unset and no state file
+between them — so there the safety is carried by labelling the command `DISCARDS uncommitted
+changes` and prefixing it with `git status`, which is true in every case it can print in.
 
 Two things this costs, both worth saying out loud when installing:
 
@@ -234,7 +314,7 @@ the `cherry-pick` / `revert` findings. **Re-running the skill must be safe on th
 Every hook this skill writes carries a marker as its second line:
 
 ```sh
-# managed-by: setup-git-guardrail v3 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
 ```
 
 That marker is the whole upgrade mechanism. Classify each of the four hook names before writing
@@ -250,7 +330,7 @@ echo "hooks dir: $H"
 for h in pre-commit pre-merge-commit reference-transaction post-checkout; do
   if   [ ! -e "$H/$h" ];                              then echo "$h: absent      -> install"
   elif v=$(sed -n 's/^# managed-by: setup-git-guardrail v\([0-9]*\).*/\1/p' "$H/$h") && [ -n "$v" ]; then
-       [ "$v" = 3 ] && echo "$h: v$v current -> leave" || echo "$h: v$v outdated -> replace"
+       [ "$v" = 4 ] && echo "$h: v$v current -> leave" || echo "$h: v$v outdated -> replace"
   else echo "$h: UNMANAGED  -> do not touch; report it"
   fi
 done
@@ -269,6 +349,17 @@ wrong, not the hooks.
 it, which the `reference-transaction` hook installed alongside makes false; v3 carries the real
 escape, and the `reference-transaction` body gained the same lines. A v2 install is not merely
 stale, it is misleading in the one place someone reads it, so replace rather than leave.
+
+**v3 → v4 replaces all four bodies, and one of the changes is behavioural.** The
+`reference-transaction` body gained `[ "$old" = "$new" ] && continue`, which un-breaks `git stash`
+in the primary clone — under v3 it exits 1 after having already stashed, and the retry it invites
+reports `No local changes to save` while the work sits in `stash@{0}`. That alone is worth the
+replace. The messages also gained conditional recovery lines: a v3 refusal offers
+`core.hooksPath=/dev/null` as its only escape, which is the bypass the hook spends two lines
+discouraging. Same grounds as v2 → v3 — misleading beats stale — plus a real bug.
+
+Re-running the skill against a v3 install rewrites four managed files and touches nothing
+hand-written. Unmanaged hooks classify as `UNMANAGED` and are left alone exactly as before.
 
 The four outcomes, and the only one that needs judgement:
 
@@ -295,8 +386,20 @@ files you added and which you left, by name.
 **Changing anything in this skill? Run `scripts/test-guardrail.sh` first.** It builds a throwaway
 upstream + primary + worktree under `mktemp -d`, installs the four hook bodies *extracted from this
 file* — so the suite cannot drift from the hooks it documents — and asserts every row of the
-section 4 table, the sharp edges above, the `pull --ff-only` allowlist, and the hooks-path
-resolution. It touches no real repository. 23 assertions, exit 0 when they all hold.
+section 4 table, the sharp edges above, the `pull --ff-only` allowlist, the `git stash` round-trip,
+and the hooks-path resolution. It touches no real repository. 30 assertions, exit 0 when they all
+hold.
+
+**It asserts message *content*, not just exit codes**, via `refused_saying`. The negative direction
+is the one that matters: a refused plain `git commit` must not mention `reset --hard`, because there
+the dirty tree is the user's own work. Both directions are mutation-tested — making the merge advice
+unconditional fails `git commit`, and dropping the `CHERRY_PICK_HEAD` test fails `git revert`.
+
+One trap the suite had to learn: **a refused merge or cherry-pick leaves the tree dirty, and git
+then refuses the next probe by itself** — `local changes would be overwritten by cherry-pick`,
+before any hook runs. That exits non-zero with `main` unmoved, so an exit-code-only assertion passes
+while testing nothing. The suite now tears down to a clean tree between probes and fails loudly if
+it can't.
 
 That covers development. The rest of this section is the manual check for a repo you just installed
 into, where the throwaway lab is not the thing you care about. Three things make it work, and
@@ -320,17 +423,22 @@ git worktree add /tmp/gr-probe -b probe/guardrail main   # must SUCCEED — old=
 git -C /tmp/gr-probe commit --allow-empty -m probe       # must SUCCEED — work belongs here
 PROBE=$(git -C /tmp/gr-probe rev-parse HEAD)
 
+echo scratch > gr-stash.txt && git add gr-stash.txt
+git stash push -m gr-probe                       # must SUCCEED and exit 0 — v4's old=new guard
+git stash pop && git rm -qf --cached gr-stash.txt && rm -f gr-stash.txt
+
 git commit --allow-empty -m probe                # must be REFUSED
 git commit --allow-empty --no-verify -m probe    # must be REFUSED — needs reference-transaction
 git commit --amend --no-edit                     # must be REFUSED — pre-commit only
 git merge --no-ff probe/guardrail                # must be REFUSED — needs pre-merge-commit
-git merge --quit                                 # teardown: --abort is itself refused
+git merge --abort                                # teardown: ALLOWED from v4; must leave a clean tree
 git cherry-pick "$PROBE"                         # must be REFUSED — reference-transaction only
-git cherry-pick --quit                           # teardown: --abort is itself refused
+git cherry-pick --abort                          # teardown: ALLOWED from v4; must leave a clean tree
 git revert --no-edit HEAD                        # must be REFUSED — reference-transaction only
+git reset --hard HEAD                            # teardown: revert leaves no REVERT_HEAD to abort
 git reset --hard HEAD~1                          # must be REFUSED — DESTROYS the working tree
 
-git restore --source=HEAD --staged --worktree .  # teardown: reset --hard HEAD would be refused
+git reset --hard HEAD                            # teardown: ALLOWED from v4 (old = new)
 git worktree remove --force /tmp/gr-probe && git branch -D probe/guardrail
 
 [ "$(git rev-parse main)" = "$BEFORE" ] && [ -z "$(git status --porcelain)" ] \
@@ -405,7 +513,10 @@ What hides the failure is a pipe: `gh api … | tail -1` reports the exit status
 - `-c core.hooksPath=/dev/null` bypasses all of it. Guardrail, not a boundary.
 - **What is protected is the commit graph, not the working tree.** A refused command has already
   written the index and the worktree by the time the ref transaction aborts, so `reset --hard` in
-  the primary still destroys uncommitted work. Recover with `git restore`, never `reset --hard HEAD`.
+  the primary still destroys uncommitted work. Recover with `git reset --hard HEAD` (v4) or
+  `git restore --source=HEAD --staged --worktree .` (any version) — check `git status` first.
+- A refused `merge` or `cherry-pick` leaves the primary mid-operation. From v4 `--abort` clears it;
+  under v3 `--abort` was itself refused and the primary stayed wedged.
 - Hooks are not cloned; every machine needs the install run again.
 - No hook can stop a branch *switch*. `post-checkout` only notices after the fact, and guarding
   `HEAD` in `reference-transaction` also refuses `git worktree add -b` — the two are
