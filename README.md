@@ -38,9 +38,13 @@ edits are live — there is no build or install step for day-to-day use.
 - **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
-  optional GitHub branch protection for the layer that can't be bypassed locally. Its
+  optional GitHub branch protection for the layer that can't be bypassed locally. The one thing no
+  git hook can refuse is a branch *switch*, so
+  [`scripts/session-drift-check.sh`](setup-git-guardrail/scripts/session-drift-check.sh) runs as a
+  Claude Code `SessionStart` hook and reports a primary clone left on the wrong branch — into the
+  agent's context, in the session that would otherwise trip over it. Its
   [`scripts/test-guardrail.sh`](setup-git-guardrail/scripts/test-guardrail.sh) builds a throwaway
-  repo, installs the hook bodies extracted from `SKILL.md`, and asserts all 30 behaviours —
+  repo, installs the hook bodies extracted from `SKILL.md`, and asserts all 50 behaviours —
   including what each refusal *says*, since the message is the whole interface — run it before
   changing the skill.
 
