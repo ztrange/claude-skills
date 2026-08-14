@@ -51,7 +51,10 @@ edits are live — there is no build or install step for day-to-day use.
 - **[`sync-config`](sync-config/SKILL.md)** — bring the installed config up to date: pull the repos
   behind the symlinks in `~/.claude/`, report what changed (trigger descriptions, global prompt
   rules, new skills), then reconcile the links — add the missing ones, repoint the ones whose repo
-  moved, remove only what has no replacement anywhere, always pointing at the main clone.
+  moved, remove only what has no replacement anywhere, always pointing at the main clone. Ends
+  every run with the roster of what is actually installed, including runs where nothing changed —
+  a delta is unreadable without the set it applies to, and anomalies (dangling links, links into a
+  worktree) are flagged in the row rather than a footnote.
 
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). Since 2026-08-13 it also *installs* with that

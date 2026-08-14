@@ -4,9 +4,11 @@ description: >-
   Bring the installed Claude Code configuration up to date — fetch the repos behind the symlinks
   in `~/.claude/`, report what changed, and reconcile the links against what those repos now
   contain. Use when the user says "update my skills", "sync my config", "pull the latest skills",
-  "update the installed stuff", "did my skills change", "relink the skills", "actualiza mis
-  skills". Adds links for new skills and removes only dangling ones, always pointing at the main
-  clone rather than a worktree, and says whether a restart is needed.
+  "update the installed stuff", "did my skills change", "relink the skills", "what skills do I
+  have", "list my skills", "qué skills tengo", "actualiza mis skills". Adds links for new skills
+  and removes only dangling ones, always pointing at the main clone rather than a worktree, says
+  whether a restart is needed, and always ends with the full roster of installed skills — even on
+  a run where nothing changed.
 ---
 
 # Sync-config — pull the repos, then fix the links
@@ -64,7 +66,8 @@ Three changes get named explicitly, because each one changes behaviour different
   changed or dropped; a commit count says nothing about how behaviour moved.
 - **A new, renamed, or deleted skill directory** — feeds step 4.
 
-Nothing changed? Say so in one line and stop.
+Nothing changed? Say so in one line — then go to section 6 anyway. A no-op sync still owes the
+roster, and the roster is what surfaces a link that drifted for reasons no pull would have shown.
 
 ## 4. Reconcile the links — additions are cheap, deletions need a fact
 
@@ -124,3 +127,37 @@ and report instead.
   that has genuinely needed a restart is creating `~/.claude/skills/` itself for the first time.
 - Cowork installs a packaged `.skill` bundle and can't follow a symlink. If a skill the user runs
   in Cowork changed, say once: rebuild with `python3 package_skill.py <skill-dir> .`.
+
+## 6. Always end with the roster
+
+**Every run ends with the full list of installed skills, including the runs where nothing changed.**
+Everything above this point is a *delta*, and a delta is unreadable without the set it applies to.
+It is also the wrong answer to the question people arrive with — not "what moved" but "what am I
+running now". A sync that reports `nothing changed` and stops has answered a question nobody asked.
+
+Build it from `~/.claude/skills/`, not from what the repos contain. The installed set is the claim;
+repo contents are how it got there.
+
+| Skill | What it does | Source |
+|---|---|---|
+| `merge` | lands a PR on a `main` that may have moved | `claude-skills` |
+| `wrap-up` | closes out finished work; fails closed on anything unmerged | `claude-skills` |
+
+Then one line for `~/.claude/CLAUDE.md` — not a skill, but half the install — and the count:
+`8 skills + the global prompt`. A number is checked against expectation in a second; a bare table
+has to be counted.
+
+Four things that make the roster worth printing rather than decorative:
+
+- **The gloss comes from each skill's own `description:`, compressed — never written from
+  memory.** Front-matter is the trigger surface: it decides when the skill fires. A roster whose
+  wording drifts from it teaches the wrong trigger, which is worse than no roster. Read the file;
+  the first dozen lines are enough.
+- **Anomalies go in the row, not in a footnote** — `→ worktree`, `dangling`, `not a symlink`. A
+  broken install rendered as a clean table is the exact failure this section guards against, and
+  a footnote is where a reader's eye does not go.
+- **Sort by name, not by repo or by recency.** The roster is read to find one entry, and the only
+  ordering that helps is the one the reader can predict.
+- **Say what is deliberately absent**, in one line: skills that live in a product repo and install
+  with it (`ja-changelog`), and anything under `deprecated/`. Otherwise their absence reads as a
+  gap in the install rather than as a decision that was already made.
