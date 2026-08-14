@@ -17,6 +17,11 @@ edits are live — there is no build or install step for day-to-day use.
 - **[`sitrep`](sitrep/SKILL.md)** — succinct state of the work: what's done, what remains, what
   needs your decision. Three capped sections, grounded in git/PR/CI state rather than recollection.
 
+- **[`tldr`](tldr/SKILL.md)** — the wall of text minus the wall: bottom line, the few facts that
+  change what you do next, the caveat buried in paragraph six, the pending decision. Compresses
+  text that already exists and adds nothing to it — unlike `sitrep`, which goes and observes the
+  tree.
+
 - **[`wrap-up`](wrap-up/SKILL.md)** — close out finished work: land the change, clean scratch
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
