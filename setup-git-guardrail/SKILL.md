@@ -4,10 +4,13 @@ description: >-
   Install git hooks that keep the primary clone parked on `main` and push all work into worktrees:
   a `pre-commit` and `pre-merge-commit` that refuse any commit made in the primary clone, a
   `reference-transaction` hook that catches the paths those never see (`cherry-pick`, `revert`,
-  `reset --hard`, `--no-verify`), and a `post-checkout` that says so loudly when the primary
-  drifts off `main`. Use when the user says "set up git guardrails", "install guardrails",
+  `reset --hard`, `--no-verify`), and a `post-checkout` that says so loudly — and says how to undo
+  it — when the primary drifts off `main`. Adds a Claude Code `SessionStart` hook that restates
+  that drift in later sessions, since the warning itself is printed once into a terminal nobody
+  re-reads. Use when the user says "set up git guardrails", "install guardrails",
   "protect main", "prevent commits to main", "stop me committing in the primary clone", "add the
-  git hooks", "set up branch protection", "update the git hooks", or "instala los guardrails". Checks what git already
+  git hooks", "set up branch protection", "update the git hooks", "the primary is on the wrong
+  branch", "detect drift off main", or "instala los guardrails". Checks what git already
   enforces before installing anything, verifies by testing the failure path — including that
   `git pull --ff-only` still works — and states plainly where the guardrail can be bypassed.
 ---
@@ -59,7 +62,7 @@ Two hooks, both keyed on the primary-clone test. `pre-commit` refuses:
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v5 — re-run the skill to update; edits here are overwritten
 git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
 common_dir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$git_dir" = "$common_dir" ] || exit 0     # linked worktree: this is where work belongs
@@ -101,15 +104,25 @@ the one place someone is reading. Args: `$1` old HEAD, `$2` new HEAD, `$3` = 1 f
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v5 — re-run the skill to update; edits here are overwritten
 [ "$3" = "1" ] || exit 0
 git_dir=$(cd "$(git rev-parse --git-dir)" && pwd)
 common_dir=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$git_dir" = "$common_dir" ] || exit 0
 branch=$(git rev-parse --abbrev-ref HEAD)
-[ "$branch" = main ] || echo "  ⚠ primary clone is on '$branch', not main" >&2
+[ "$branch" = main ] && exit 0
+echo "  ⚠ primary clone is on '$branch', not main — no worktree can check out main while it is" >&2
+echo "    git switch main                # then branch in a worktree instead:" >&2
+echo "    git worktree add .claude/worktrees/<task> -b claude/<task> origin/main" >&2
 exit 0
 ```
+
+**This is the only hook here that warns rather than refuses, so its message has to carry the whole
+fix.** A refusal leaves the user exactly where they were and can afford to be terse; a warning
+arrives *after* the state it describes is already true, and the reader has to be told how to get
+back. v4 said only what was wrong. `git switch main` is the entire remedy, it is permitted by the
+`reference-transaction` hook (a `HEAD` update is not a `refs/heads/*` transaction), and section 9
+covers the case where nobody was reading this terminal at the time.
 
 `pre-commit` does not run for merge commits — git calls `pre-merge-commit` for those, so
 `git merge --no-ff` lands on `main` untouched without it. Install the same body under both names.
@@ -129,7 +142,7 @@ installed. A `reference-transaction` hook catches exactly those, because they ar
 
 ```sh
 #!/bin/sh
-# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v5 — re-run the skill to update; edits here are overwritten
 [ "$1" = prepared ] || exit 0
 gd=$(cd "$(git rev-parse --git-dir)" && pwd); cm=$(cd "$(git rev-parse --git-common-dir)" && pwd)
 [ "$gd" = "$cm" ] || exit 0
@@ -314,7 +327,7 @@ the `cherry-pick` / `revert` findings. **Re-running the skill must be safe on th
 Every hook this skill writes carries a marker as its second line:
 
 ```sh
-# managed-by: setup-git-guardrail v4 — re-run the skill to update; edits here are overwritten
+# managed-by: setup-git-guardrail v5 — re-run the skill to update; edits here are overwritten
 ```
 
 That marker is the whole upgrade mechanism. Classify each of the four hook names before writing
@@ -330,7 +343,7 @@ echo "hooks dir: $H"
 for h in pre-commit pre-merge-commit reference-transaction post-checkout; do
   if   [ ! -e "$H/$h" ];                              then echo "$h: absent      -> install"
   elif v=$(sed -n 's/^# managed-by: setup-git-guardrail v\([0-9]*\).*/\1/p' "$H/$h") && [ -n "$v" ]; then
-       [ "$v" = 4 ] && echo "$h: v$v current -> leave" || echo "$h: v$v outdated -> replace"
+       [ "$v" = 5 ] && echo "$h: v$v current -> leave" || echo "$h: v$v outdated -> replace"
   else echo "$h: UNMANAGED  -> do not touch; report it"
   fi
 done
@@ -358,7 +371,24 @@ replace. The messages also gained conditional recovery lines: a v3 refusal offer
 `core.hooksPath=/dev/null` as its only escape, which is the bypass the hook spends two lines
 discouraging. Same grounds as v2 → v3 — misleading beats stale — plus a real bug.
 
-Re-running the skill against a v3 install rewrites four managed files and touches nothing
+**v4 → v5 is message-only, and it is the reason the marker exists.** `post-checkout` gained the
+remedy — v4 said the primary had drifted and stopped there, leaving the one hook that *cannot*
+refuse without a way back. Nothing else changed: no behaviour, no exit code, no allowlist. An
+install left at v4 is not broken, it is just less useful in the moment it fires, so this is the one
+upgrade that can be deferred without consequence.
+
+Deferring it is still a choice worth making deliberately, because the version number is the **only**
+channel there is. Hooks are copied into each repo, not linked; nothing phones home. A skill edit
+that leaves the marker alone reaches no installed repo ever — the classifier reads v4 in the file,
+v4 in the skill, prints `current -> leave`, and the old message stays forever. That is why a
+message-only change bumps at all.
+
+The cost is that the marker line lives in all four bodies, so a change to one message still makes
+all four files differ and a re-run rewrites all four. They are managed files by definition, so this
+is noise rather than risk — but it is why the bar for bumping is "the change must actually reach
+someone", not "something changed".
+
+Re-running the skill against a v3 or v4 install rewrites four managed files and touches nothing
 hand-written. Unmanaged hooks classify as `UNMANAGED` and are left alone exactly as before.
 
 The four outcomes, and the only one that needs judgement:
@@ -387,13 +417,25 @@ files you added and which you left, by name.
 upstream + primary + worktree under `mktemp -d`, installs the four hook bodies *extracted from this
 file* — so the suite cannot drift from the hooks it documents — and asserts every row of the
 section 4 table, the sharp edges above, the `pull --ff-only` allowlist, the `git stash` round-trip,
-and the hooks-path resolution. It touches no real repository. 30 assertions, exit 0 when they all
+the `post-checkout` warning and its remedy, the section 9 drift check from all four vantage points,
+and the hooks-path resolution. It touches no real repository. 50 assertions, exit 0 when they all
 hold.
 
-**It asserts message *content*, not just exit codes**, via `refused_saying`. The negative direction
-is the one that matters: a refused plain `git commit` must not mention `reset --hard`, because there
-the dirty tree is the user's own work. Both directions are mutation-tested — making the merge advice
-unconditional fails `git commit`, and dropping the `CHERRY_PICK_HEAD` test fails `git revert`.
+**It asserts message *content*, not just exit codes**, via `refused_saying`, `warned` and
+`drift_says`. The negative direction is the one that matters: a refused plain `git commit` must not
+mention `reset --hard`, because there the dirty tree is the user's own work, and the drift check must
+say *nothing at all* when the primary is parked correctly. Both directions are mutation-tested —
+making the merge advice unconditional fails `git commit`, dropping the `CHERRY_PICK_HEAD` test fails
+`git revert`, hardcoding `main` in place of `origin/HEAD` fails all three `Dev` assertions, dropping
+the detached-HEAD fallback fails that one, and rewriting the drift check as `[ test ] && echo …`
+fails every *silent* assertion at once, because it then exits 1 on the happy path.
+
+**The path in the drift report is asserted by property, not by string.** The same primary resolves
+to `/var/folders/…` from inside itself and `/private/var/folders/…` from a linked worktree — git
+records the real path in the worktree's `.git` file and macOS symlinks `/var`. Both are valid and
+`git -C` accepts either, so the assertion extracts the path from the `Fix:` line and checks that
+`--git-dir` and `--git-common-dir` agree there, i.e. that it names a primary clone. String-matching
+`$PRI` fails for a reason that has nothing to do with the behaviour under test.
 
 One trap the suite had to learn: **a refused merge or cherry-pick leaves the tree dirty, and git
 then refuses the next probe by itself** — `local changes would be overwritten by cherry-pick`,
@@ -508,6 +550,62 @@ gh api repos/<owner>/<repo>/branches/main/protection \
 What hides the failure is a pipe: `gh api … | tail -1` reports the exit status of `tail`, which is
 0 no matter what the API said. Same trap as `${PIPESTATUS[0]}` in section 7, one layer up.
 
+## 9. Drift is announced once, into a terminal nobody re-reads
+
+`post-checkout` fires at the instant the primary leaves `main` and prints the remedy. That is the
+right moment and the wrong durability: the warning goes to whoever ran `git switch`, scrolls away,
+and is never restated. Meanwhile the drift persists, and the expensive consequence from section 1 —
+`gh pr merge --delete-branch` failing its local step *after* the merge has landed — arrives hours
+later, in a different session, with nothing on screen connecting the two.
+
+Nothing in git closes this. The check has to run at the start of a session rather than at the moment
+of the switch, which puts it outside git's hook set entirely.
+
+[`scripts/session-drift-check.sh`](scripts/session-drift-check.sh) is that check, wired as a Claude
+Code `SessionStart` hook in `~/.claude/settings.json`:
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      { "hooks": [ { "type": "command",
+                     "command": "$HOME/.claude/skills/setup-git-guardrail/scripts/session-drift-check.sh" } ] }
+    ]
+  }
+}
+```
+
+**`SessionStart` is one of only three events whose stdout is added to the agent's context** — with
+`UserPromptSubmit` and `UserPromptExpansion`; for every other event stdout goes to the debug log and
+is never seen. That is the whole reason this is a `SessionStart` hook and not, say, a `PreToolUse`
+one: the finding has to be *read by the agent about to do the work*, not printed at a user who
+already knows. It also cannot block a session, and a non-zero exit only shows stderr to the user, so
+a broken script degrades to silence rather than to a wedged session.
+
+Omit the `matcher` so it fires on all of `startup`, `resume`, `clear`, `compact` and `fork`. The
+three rebuild-the-context cases are exactly when the fact needs restating.
+
+Three things in the script body are load-bearing, all of them measured:
+
+- **The default branch comes from `origin/HEAD`, not the literal `main`.** Across 19 local repos one
+  parks on `Dev`; hardcoding `main` warns every session about a correctly-parked clone, which is how
+  a guardrail becomes something you learn to skip. `git clone` sets `origin/HEAD`, so the `main`
+  fallback is only for a repo that has somehow lost it.
+- **A detached HEAD is drift and must be named.** `symbolic-ref` *fails* there rather than returning
+  something, so the obvious form leaves the branch variable empty and reports nothing —
+  `git switch --detach main` is one of the two paths section 2 exists for, and it would have been
+  the one case that stayed silent.
+- **It must exit 0 on the happy path.** The natural one-liner — `[ test ] && echo …` — ends on a
+  false test when the primary *is* parked correctly, so the hook exits 1 in the normal case and logs
+  a failure every session forever. Structure it so `exit 0` is the last statement.
+
+Verified from all three vantage points — inside the primary, inside a subdirectory of it, and from a
+linked worktree — plus outside any repo at all, where `dirname` of a failed `rev-parse` would
+otherwise resolve to `/`. `scripts/test-guardrail.sh` asserts each of these.
+
+This reports; it never refuses. Combined with `post-checkout` the drift is now stated twice — once
+when it happens, once when it next matters — and prevented neither time.
+
 ## Limits — say these out loud when you install
 
 - `-c core.hooksPath=/dev/null` bypasses all of it. Guardrail, not a boundary.
@@ -520,7 +618,9 @@ What hides the failure is a pipe: `gh api … | tail -1` reports the exit status
 - Hooks are not cloned; every machine needs the install run again.
 - No hook can stop a branch *switch*. `post-checkout` only notices after the fact, and guarding
   `HEAD` in `reference-transaction` also refuses `git worktree add -b` — the two are
-  indistinguishable there. Drift off `main` is warned about, never prevented.
+  indistinguishable there. Drift off `main` is warned about, never prevented. From v5 the warning
+  carries the fix, and section 9's `SessionStart` hook restates it in later sessions — but neither
+  is enforcement, and the primary can sit drifted indefinitely if both are ignored.
 - `git commit --amend` fires no ref transaction at all, so `reference-transaction` is blind to it.
   That is why the `pre-commit` family stays even after installing the stronger hook.
 - Prior art in this setup: `erlia/ja-changelog/.githooks/` — the `pre-commit` / `post-checkout`

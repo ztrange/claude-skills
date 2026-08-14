@@ -253,6 +253,100 @@ if [ "$(git -C "$LAB/stash-canary" stash list | wc -l | tr -d ' ')" = 1 ]; then
   ok "...and it stashed anyway — refused-but-effective, the v3 failure mode"
 else bad "...and it stashed anyway — refused-but-effective" "no stash entry; the failure mode changed"; fi
 
+# --- post-checkout: the one hook that warns instead of refusing ---------------------------------
+# It cannot undo the switch, so its message is the entire remedy. v4 said only what was wrong.
+# A branch switch reaches reference-transaction as a HEAD update, not a refs/heads/* one, so it is
+# permitted — which is what makes `git switch main` safe to advise from inside the guardrail.
+head_ "post-checkout warns on drift (section 3)"
+warned() {  # warned <desc> <match ERE|-> -- <git args...>   : '-' means the warning must NOT appear
+  local desc=$1 want=$2; shift 2; [ "$1" = -- ] && shift
+  local before out; before=$(gs)
+  out=$(git -C "$PRI" "$@" 2>&1 >/dev/null)
+  if   [ "$(gs)" != "$before" ];                          then bad "$desc" "a branch switch moved main $before -> $(gs)"
+  elif [ "$want" = - ]; then grep -q 'primary clone is on' <<<"$out" \
+         && bad "$desc" "warned when parked correctly: $(tr '\n' '|' <<<"$out")" || ok "$desc"
+  elif grep -Eq "$want" <<<"$out";                        then ok "$desc"
+  else bad "$desc" "message lacks /$want/ — got: $(tr '\n' '|' <<<"$out")"; fi
+}
+warned "drifting the primary warns"            "primary clone is on 'drift/probe', not main" -- switch -c drift/probe
+warned "...and the warning carries the fix (v5)" 'git switch main'                           -- switch -c drift/probe2
+warned "switching back to main is silent"      -                                             -- switch main
+git -C "$PRI" branch -qD drift/probe drift/probe2
+
+# --- the SessionStart hook: the same fact, restated when it next matters ------------------------
+# post-checkout fires once, into a terminal that scrolls. This runs at session start, from wherever
+# the session opened, and its stdout is added to the agent's context.
+head_ "SessionStart drift check (section 9)"
+DC="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/session-drift-check.sh"
+[ -x "$DC" ] || { echo "missing or non-executable: $DC" >&2; exit 1; }
+
+drift_says() {  # drift_says <desc> <dir> <match ERE|->   : '-' means it must print NOTHING
+  local desc=$1 dir=$2 want=$3 out rc
+  out=$(cd "$dir" 2>/dev/null && "$DC" 2>/dev/null); rc=$?
+  if   [ "$rc" != 0 ];   then bad "$desc" "exit $rc — a SessionStart hook that exits non-zero logs a failure every session"
+  elif [ "$want" = - ];  then [ -z "$out" ] && ok "$desc" || bad "$desc" "expected silence, got: $(tr '\n' '|' <<<"$out")"
+  elif grep -Eq "$want" <<<"$out"; then ok "$desc"
+  else bad "$desc" "message lacks /$want/ — got: $(tr '\n' '|' <<<"$out")"; fi
+}
+
+# Premise for the not-a-repo case below: the lab must not itself sit inside a repository.
+if (cd "$LAB" && git rev-parse --git-common-dir >/dev/null 2>&1); then
+  bad "the lab dir is not inside a git repo (premise)" "TMPDIR is inside a repo; the not-a-repo case cannot be tested here"
+else ok "the lab dir is not inside a git repo (premise)"; fi
+
+mkdir -p "$PRI/sub2"
+drift_says "silent when the primary is parked (from the primary)"  "$PRI"      -
+drift_says "silent when parked (from a subdirectory of it)"        "$PRI/sub2" -
+drift_says "silent when parked (from a linked worktree)"           "$WT"       -
+drift_says "silent outside any repo (dirname of a failed rev-parse would give /)" "$LAB" -
+
+# The reported path is asserted by PROPERTY, not by string. The same primary resolves to
+# /var/folders/... from inside itself and /private/var/folders/... from a worktree, because git
+# records the real path in the worktree's .git file and macOS symlinks /var. Both are valid and
+# `git -C` accepts either, so what has to hold is that the path names a primary clone at all.
+fix_targets_a_primary() {  # <desc> <dir>
+  local desc=$1 dir=$2 out p gd cm
+  out=$(cd "$dir" && "$DC" 2>/dev/null)
+  p=$(sed -n 's/.*Fix:  git -C \(.*\) switch .*/\1/p' <<<"$out")
+  if [ -z "$p" ] || [ ! -d "$p" ]; then bad "$desc" "no usable path in: $(tr '\n' '|' <<<"$out")"; return; fi
+  gd=$(cd "$p" && cd "$(git rev-parse --git-dir)" && pwd -P)
+  cm=$(cd "$p" && cd "$(git rev-parse --git-common-dir)" && pwd -P)
+  if [ "$gd" = "$cm" ]; then ok "$desc"
+  else bad "$desc" "'$p' is a linked worktree, not the primary ($gd != $cm)"; fi
+}
+
+git -C "$PRI" switch -q -c drift/session 2>/dev/null
+drift_says "drift reported from the primary"  "$PRI"      "is on 'drift/session', not 'main'"
+drift_says "...and from a subdirectory of it" "$PRI/sub2" "is on 'drift/session', not 'main'"
+# This is the case post-checkout cannot cover at all: the agent is working in a worktree and never
+# ran the switch, so it never saw the warning.
+drift_says "...and from a linked worktree, which never saw post-checkout" "$WT" "is on 'drift/session', not 'main'"
+drift_says "the report carries the fix"       "$WT"       "Fix:  git -C .* switch main\$"
+fix_targets_a_primary "the fix points at the primary clone, not the worktree it was run from" "$WT"
+fix_targets_a_primary "...and at the same clone when run from inside it"                      "$PRI"
+
+# symbolic-ref FAILS on a detached HEAD rather than returning something, so the obvious form leaves
+# the variable empty and reports nothing. `git switch --detach` is a drift path section 2 exists for.
+git -C "$PRI" switch -q --detach main 2>/dev/null
+drift_says "a detached primary is reported, not silently skipped" "$WT" "is on 'detached HEAD'"
+git -C "$PRI" switch -q main 2>/dev/null
+git -C "$PRI" branch -qD drift/session; rmdir "$PRI/sub2"
+drift_says "back to parked: silent again" "$WT" -
+
+# Hardcoding 'main' would warn every session about a correctly-parked clone. Measured across 19
+# local repos, one parks on 'Dev'. origin/HEAD is the authority; 'main' is only the fallback.
+mkdir -p "$LAB/updev" && git -C "$LAB/updev" init -q -b Dev .
+git -C "$LAB/updev" config user.email t@example.com; git -C "$LAB/updev" config user.name t
+echo d > "$LAB/updev/d.txt"; git -C "$LAB/updev" add -A; git -C "$LAB/updev" commit -qm d1
+git clone -q "$LAB/updev" "$LAB/devclone"
+if [ "$(git -C "$LAB/devclone" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null)" = origin/Dev ]; then
+  ok "git clone sets origin/HEAD (the premise the default-branch lookup rests on)"
+else bad "git clone sets origin/HEAD" "unset or wrong; the script would fall back to 'main' and misfire"; fi
+drift_says "a repo parked on 'Dev' is silent, not warned at"      "$LAB/devclone" -
+git -C "$LAB/devclone" switch -q -c feature 2>/dev/null
+drift_says "...and its drift names 'Dev', not 'main'"             "$LAB/devclone" "not 'Dev'"
+drift_says "...and its fix switches to 'Dev'"                     "$LAB/devclone" "switch Dev\$"
+
 # --- the hooks-path resolution bug the installer snippets have to avoid -------------------------
 head_ "Hooks-path resolution (sections 5 and 6)"
 mkdir -p "$PRI/sub"
