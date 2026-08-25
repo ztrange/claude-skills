@@ -1,0 +1,105 @@
+---
+name: duck
+description: >-
+  Re-explain the current work from zero, to the user, as if they had just walked in — the mechanism
+  before the failure, every name resolved, what was already ruled out, and the decision stated so it
+  can actually be answered. Use when the user says "duck", "duck it", "duck this", "talk to the
+  duck", "explain it to the duck", "I don't follow", "I don't understand what you're asking me",
+  "explain that from scratch", "assume I know nothing about this", "start over, I just walked in",
+  "explícamelo desde cero", "no entiendo qué me estás pidiendo", or when an answer comes back that
+  resolves a different question than the one asked. Expands rather than compresses — the opposite
+  of /tldr.
+---
+
+# Duck — explain it to whoever just walked in
+
+In the story you explain the problem to a rubber duck and solve it yourself. Here the duck is the
+user, and the duck answers back — but only if the explanation is complete enough to be advised on.
+This skill is that explanation.
+
+The failure it fixes: forty tool calls deep, everything has a name — a file, a branch, a helper, a
+workaround someone put in eight months ago. The question that comes out ("keep the fallback in
+`resolveBinding` or hoist it to the caller?") is answerable only from inside that context. The user
+has been doing something else. So they answer the question they think was asked, or they tell you to
+just decide — and a decision that needed them got made without them.
+
+| | Written for | Direction |
+|---|---|---|
+| `/tldr` | the user, who already read it | shorter |
+| `/sitrep` | the user, who is already in it | status, observed |
+| `/handoff` | the next agent | portable |
+| **`/duck`** | **the user, cold** | **longer, complete** |
+
+## The shape
+
+```
+**What this is about**
+<2–4 sentences: what the thing is, what it's for, why we're touching it at all>
+
+**What I've tried**
+- <attempt — what happened>                        (max 4; include what was ruled out and why)
+
+**Where it's stuck**
+<mechanism first — what it's supposed to do — then what it does instead>
+
+**What I need from you**
+<the choice, as options, each with what it costs>
+Recommend: <option>, because <half a line>
+```
+
+One screen. No preamble, no "let me back up a bit", no apology for the length.
+
+## Rules that make it land
+
+- **Assume zero prior context.** No "as I mentioned", no "the file we were looking at", no "the
+  same issue as before". The test: could a colleague who sat down thirty seconds ago read it top
+  to bottom without scrolling up? If a sentence needs the conversation to parse, rewrite it.
+
+- **Translate the sentence, not the vocabulary.** A term of art keeps its name and gets a short
+  gloss anchored to *this* task — "*idempotent* — running the import twice leaves the same rows".
+  Don't swap it for an easier word: the user needs that term to answer you, and to ask the next
+  question. Simplifying the words while keeping the density fixes nothing.
+
+- **Every name resolves.** `#412`, `verifyToken`, `--ff-only`, the branch, the error string — each
+  arrives with the clause that says what it is. Unresolved names are where the misunderstanding
+  was living in the first place.
+
+- **Mechanism before failure.** One sentence on what the code is supposed to do, then what it does
+  instead. A bug described before its mechanism is noise.
+
+- **Observe, don't recall.** Re-read the file, re-run the command, re-check the PR before
+  describing them. Explaining from memory reproduces the same context that already lost the user,
+  with the wrong parts intact — and risks briefing them on a tree that has moved.
+
+- **Mark the guesses.** Separate what you verified from what you're inferring. Advice is only as
+  good as knowing which is which, and this is exactly where a confident sentence does damage.
+
+- **Say what you ruled out, and why.** One line each. Skip it and the first suggestion back is the
+  dead end you already walked.
+
+- **The ask has to be answerable.** Options, costs, a recommendation. "What do you think?" is not
+  a question. If the answer wouldn't change what you do next, it isn't a decision — say what
+  happens next instead of asking.
+
+- **At most one excerpt.** A trimmed error, a few lines of the file — and only when the exact
+  wording is the thing being decided. Otherwise point: `file:line`.
+
+- **Scope is the decision, not the project.** If it doesn't fit a screen you've started giving a
+  tour of the codebase. Cut back to what bears on the choice.
+
+## When explaining it solves it
+
+Sometimes it does — that is the whole story. Say so and stop:
+
+> Writing this out: `<what surfaced>`. That answers it — `<the answer>`. Proceeding unless you
+> disagree.
+
+Don't ask the question anyway for symmetry, and don't hide that the explanation is what produced
+the answer. A duck that gets talked at and isn't needed has done its job.
+
+## Follow-ups
+
+- **"Still lost" / "duck it again"** — start one level further out, don't repeat the same words
+  louder. Find the assumption the first version leaned on without stating, and begin there.
+- **Answered with a decision** — act on it. No re-briefing, no confirming it back.
+- **"Duck the caching part"** — scope to that piece, same rules, shorter.
