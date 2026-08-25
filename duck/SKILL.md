@@ -79,7 +79,8 @@ One screen. No preamble, no "let me back up a bit", no apology for the length.
 
 - **The ask has to be answerable.** Options, costs, a recommendation. "What do you think?" is not
   a question. If the answer wouldn't change what you do next, it isn't a decision — say what
-  happens next instead of asking.
+  happens next instead of asking. That exemption is for something that was never a decision, not
+  for one you answered yourself on the way here.
 
 - **At most one excerpt.** A trimmed error, a few lines of the file — and only when the exact
   wording is the thing being decided. Otherwise point: `file:line`.
@@ -89,13 +90,25 @@ One screen. No preamble, no "let me back up a bit", no apology for the length.
 
 ## When explaining it solves it
 
-Sometimes it does — that is the whole story. Say so and stop:
+Sometimes the answer falls out while you're writing — that is the story working. It changes what
+goes under **What I need from you**. It does not delete that section, and it does not start the
+work.
 
-> Writing this out: `<what surfaced>`. That answers it — `<the answer>`. Proceeding unless you
-> disagree.
+- **Still stop, and still ask.** Even when the answer looks obvious. Finding it while explaining
+  doesn't convert the decision into yours — the whole reason you were writing is that this one
+  wasn't. Acting on it puts the user back where `/duck` was invoked to get them out of: told
+  afterwards.
+- **Say where it came from.** Don't present a conclusion reached three paragraphs ago as if it had
+  been the plan all along.
+- **It's a proposal, not a finding.** It came out of re-reading and reasoning, not out of running
+  anything. Say which parts you actually checked and which you didn't, and don't go verify it
+  first — that's doing the work before the decision.
+- **Keep the alternatives on the page.** The options you were about to lay out are still the
+  options. An answer you like doesn't get to be the only one offered.
 
-Don't ask the question anyway for symmetry, and don't hide that the explanation is what produced
-the answer. A duck that gets talked at and isn't needed has done its job.
+> Writing this out surfaced `<what>`, which points at `<the answer>`. That's reasoning — I haven't
+> run anything against it. Options are still `<a>` and `<b>`; recommend `<the answer>`, because
+> `<half a line>`. Your call.
 
 ## Follow-ups
 
