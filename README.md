@@ -22,6 +22,11 @@ edits are live — there is no build or install step for day-to-day use.
   text that already exists and adds nothing to it — unlike `sitrep`, which goes and observes the
   tree.
 
+- **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me from
+  zero before asking. Mechanism before failure, every name carrying the clause that resolves it,
+  the dead ends already walked, and the decision stated as options with a recommendation. The
+  opposite move to `tldr` — it expands, because the problem there is missing context, not volume.
+
 - **[`wrap-up`](wrap-up/SKILL.md)** — close out finished work: land the change, clean scratch
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
