@@ -27,6 +27,19 @@ edits are live — there is no build or install step for day-to-day use.
   the dead ends already walked, and the decision stated as options with a recommendation. The
   opposite move to `tldr` — it expands, because the problem there is missing context, not volume.
 
+- **[`house-style`](house-style/SKILL.md)** — my engineering conventions for a project that doesn't
+  know them yet: AWS + serverless + CDK + TypeScript where the choice is open, invariants made
+  structural rather than documented, one schema as the contract, test-first with the red verified
+  to fail for the right reason, and docs that point at their authority instead of asserting a
+  number. Ends by writing them into that repo's own `CLAUDE.md`, so it fires once per project
+  rather than once per session. Existing code wins on style; these steer what's newly designed.
+
+- **[`low-fuel`](low-fuel/SKILL.md)** — the budget is nearly gone and the work isn't finished:
+  throttle spending and get what's in flight somewhere durable. Commit, push, draft PR, *then*
+  prose — the chat summary costs the most and survives the least, which is the inversion agents
+  running dry usually get backwards. Cuts breadth, not the check that stops broken work landing,
+  and never lets a low budget excuse skipping a confirmation gate.
+
 - **[`wrap-up`](wrap-up/SKILL.md)** — close out finished work: land the change, clean scratch
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
