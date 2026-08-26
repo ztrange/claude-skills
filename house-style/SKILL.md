@@ -49,6 +49,21 @@ trade-off.
 - **Targeted writes over full replaces**, at every persistence seam. Read-edit-put makes every
   field the caller's problem, and the first one who forgets a field drops it silently — while a
   test asserting "the row still looks right" passes anyway.
+- **Privacy is the enforcement.** A layer that asks not to be bypassed is a convention, and
+  conventions lose. Don't re-export the raw client from the repository index: a route that cannot
+  *name* the table is one that cannot issue its own query, and that is a shape rather than a rule.
+- **Containment runs in both directions.** Stopping callers from reaching in is half a seam; the
+  other half is the implementation's vocabulary not leaking back out. `ja-changelog` held the
+  outbound half for months while ten route files each tested a raw AWS error name and invented
+  their own meaning for it — four different dialects for "the conditional write lost". The fix is
+  that the guarded writer raises what its condition *means*, because only the writer knows what it
+  asserted: the same driver error is a 409 on one write, a 404 on another, a 410 on a third.
+- **One copy of the data.** A second copy of a judgement does not preserve it, it competes with it
+  — and a stale copy is worse than none. Where something a person decided cannot be re-derived,
+  that is an argument for retention of the real store, not for a hand-maintained mirror of it.
+- **Configuration that steers nothing is worse than no configuration.** A value sitting in the
+  config that no code reads will be trusted by the next person to change something. Either wire it
+  or say, where it is displayed, that it is inert.
 - **One schema is the contract, and types are derived from it.** Not a hand-kept type next to a
   hand-kept validator next to a hand-kept OpenAPI file. In `expense-tracking` the Zod schemas in
   `shared` are the source: the server validates with them, the docs are generated from them, and
@@ -88,6 +103,11 @@ never wired up. A test nobody has watched fail is not known to test anything.
 - **Snapshot the surface that drift attacks** — the route table with its auth tier, the public
   exports — and derive counts from it with a command instead of restating them in prose. Two people
   each correctly adding one still merge to a wrong total.
+- **Know what the build does not check, and put a test in the gap.** Packaging proves packaging,
+  never that the code runs. Where a directory ships as-is with no bundler and no typecheck, a
+  misspelled relative import synths clean, deploys green and 500s at cold start — so one test that
+  imports the real module graph and asserts the entry point is a function is what stands between a
+  typo and an outage. Find the equivalent gap in whatever the toolchain is.
 - **A migration has an oracle.** When replacing a system, the old one's output is the acceptance
   test: same inputs, same numbers, and the diff is the bug list.
 - **Framework follows the project.** A second test runner is a cost with no payer.
@@ -117,6 +137,14 @@ never wired up. A test nobody has watched fail is not known to test anything.
 - **Trunk-based: short-lived branches, draft PR early, a human merges.** Nothing auto-merges.
 - **Anything billable or deployed needs permission for that exact action.** Approved once is not
   approved again.
+- **A job that never runs looks exactly like one that does.** Surface freshness where someone will
+  actually see it — the age of the newest backup point, the timestamp of the last sync — and treat
+  unreadable, missing and empty as three distinct failures rather than one silence. Absence is the
+  state that reports itself as fine.
+- **A rule that delegates to a mechanism has to check the mechanism exists.** "Use AWS Backup for
+  longer retention" was `ja-changelog`'s documented policy for months with nothing implementing it,
+  and the repo quietly grew hand-maintained CSVs doing the job instead. It was found by running the
+  command and getting back an empty list — not by re-reading the sentence.
 
 ## The procedure
 
