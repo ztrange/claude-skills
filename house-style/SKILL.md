@@ -43,8 +43,19 @@ this skill cannot see.
 **Every name in that table is expected to age** — they are the current answer, not the permanent
 one, and they were current as of 2026-08. The rows turn over at very different speeds: UI fastest,
 which is why that one is left unnamed on purpose; the test and tooling picks slower, but not never.
-Treat a name that no longer looks right as a name to check, not as a rule to follow — and fix the
-row when you find it stale.
+**They are suggestions to verify, not settled facts.** Before applying a row:
+
+- **Check it is still the standard**, rather than trusting the row. This file cannot know what
+  happened after it was written, and its date is there so you can judge how much could have.
+- **If something has genuinely replaced it, use the newer one.** A stale default applied because it
+  was written down is the whole failure this table would otherwise cause.
+- **The bar is "has won", not "is newer".** Something existing is not something having replaced
+  it. Go by what new projects in that ecosystem actually reach for, not by what is loudest this
+  quarter — churning the stack every session costs more than an out-of-date row does.
+- **Say so, so the row can be fixed.** Name the row, what it says, what replaced it, and what the
+  evidence was. **Don't rewrite the row yourself** — this file is the user's own preferences, and a
+  table that quietly edits itself is one they can no longer trust to say what they decided.
+- **If you couldn't check, say the pick is unverified.** Silence reads as confirmation.
 
 **So don't take a framework name from this file.** "The current one" is the preference, so check
 what that is now rather than inheriting whatever was true when this was written. `expense-tracking`
