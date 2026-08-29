@@ -90,7 +90,22 @@ that happens once — a migration, a one-off setup — and keeping them permanen
 trigger surface on something that will not come up again. Auto-linking them would quietly undo a
 decision, so the marker is checked before the "no link → create it" rule fires. A user who wants
 one links it by hand, uses it, and removes the link. `find <repo> -maxdepth 2 -name .on-demand`
-lists them; if one *is* currently linked, that is deliberate — report it, leave it.
+lists them.
+
+**A linked `.on-demand` skill is the thing this run has to say out loud.** Removing the link is the
+step people forget, because nothing breaks when they don't — the skill just sits in the loaded set
+forever, which is the state the marker exists to prevent. So flag it in its roster row, and say it
+again in the report with the command ready to run:
+
+```bash
+rm ~/.claude/skills/<skill>        # done with it?
+```
+
+**Offer to remove it, and remove it only on an explicit yes.** Never fold it into the sweep. This
+skill cannot see whether the one-off job is finished — a migration half-done looks exactly like one
+never started — and pulling a skill out from under a user mid-task is worse than a link that
+outstays its welcome. The reminder is cheap and repeats next run; a wrong removal costs them the
+thread they were on.
 
 `~/.claude/CLAUDE.md` is the same reconciliation against a single target:
 
@@ -161,9 +176,9 @@ Four things that make the roster worth printing rather than decorative:
   memory.** Front-matter is the trigger surface: it decides when the skill fires. A roster whose
   wording drifts from it teaches the wrong trigger, which is worse than no roster. Read the file;
   the first dozen lines are enough.
-- **Anomalies go in the row, not in a footnote** — `→ worktree`, `dangling`, `not a symlink`. A
-  broken install rendered as a clean table is the exact failure this section guards against, and
-  a footnote is where a reader's eye does not go.
+- **Anomalies go in the row, not in a footnote** — `→ worktree`, `dangling`, `not a symlink`,
+  `on-demand, still linked`. A broken install rendered as a clean table is the exact failure this
+  section guards against, and a footnote is where a reader's eye does not go.
 - **Sort by name, not by repo or by recency.** The roster is read to find one entry, and the only
   ordering that helps is the one the reader can predict.
 - **Say what is deliberately absent**, in one line: skills that live in a product repo and install
