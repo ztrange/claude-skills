@@ -74,6 +74,20 @@ edits are live — there is no build or install step for day-to-day use.
   a delta is unreadable without the set it applies to, and anomalies (dangling links, links into a
   worktree) are flagged in the row rather than a footnote.
 
+- **[`aws-sso-sessions`](aws-sso-sessions/SKILL.md)** — **on demand, not installed by default.**
+  Migrates `~/.aws/config` off the legacy per-profile SSO form onto `sso-session` blocks, which is
+  what buys several SSO logins at once and refresh tokens that outlive the first hour; then
+  explains where session duration actually lives (console only — no API returns it) and which of
+  the three settings in that panel is the one that matters. Backs up before writing, verifies the
+  rewrite without opening a browser, and never runs `aws sso login` itself. The job happens once
+  per machine, so it carries an `.on-demand` marker: `/sync-config` deliberately leaves it
+  unlinked, and it gets installed for the migration and removed after.
+
+  ```bash
+  ln -s "$PWD/aws-sso-sessions" ~/.claude/skills/aws-sso-sessions   # then, when done:
+  rm ~/.claude/skills/aws-sso-sessions
+  ```
+
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). Since 2026-08-13 it also *installs* with that
   repo — a tracked `.claude/skills/ja-changelog -> ../../skill` symlink — so it is no longer linked

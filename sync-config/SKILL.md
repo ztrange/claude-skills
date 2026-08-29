@@ -76,6 +76,7 @@ Compare the skill directories each repo now contains against `~/.claude/skills/`
 | Case | Action |
 |---|---|
 | Skill directory in the repo, no link | Create it: `ln -s <main-clone>/<skill> ~/.claude/skills/<skill>` |
+| Skill directory carrying an `.on-demand` marker file | **Leave unlinked.** It is installed by hand for one job and removed after — see below |
 | Link whose target no longer exists | Search before removing — see below. A dangling link usually means the repo moved, not that the skill died |
 | Link into a worktree, target exists | Report it, don't rewrite it. Someone is running a branch live on purpose |
 | Link into the main clone, target exists | Leave it. The pull already updated the content |
@@ -83,6 +84,13 @@ Compare the skill directories each repo now contains against `~/.claude/skills/`
 
 Link to the **main clone**, never to a worktree path: the worktree is removed when its branch
 lands, and the link dies with it.
+
+**An `.on-demand` marker means the absence of a link is the intended state.** Some skills do a job
+that happens once — a migration, a one-off setup — and keeping them permanently loaded spends
+trigger surface on something that will not come up again. Auto-linking them would quietly undo a
+decision, so the marker is checked before the "no link → create it" rule fires. A user who wants
+one links it by hand, uses it, and removes the link. `find <repo> -maxdepth 2 -name .on-demand`
+lists them; if one *is* currently linked, that is deliberate — report it, leave it.
 
 `~/.claude/CLAUDE.md` is the same reconciliation against a single target:
 
@@ -159,5 +167,7 @@ Four things that make the roster worth printing rather than decorative:
 - **Sort by name, not by repo or by recency.** The roster is read to find one entry, and the only
   ordering that helps is the one the reader can predict.
 - **Say what is deliberately absent**, in one line: skills that live in a product repo and install
-  with it (`ja-changelog`), and anything under `deprecated/`. Otherwise their absence reads as a
-  gap in the install rather than as a decision that was already made.
+  with it (`ja-changelog`), anything under `deprecated/`, and the `.on-demand` skills — those
+  listed by name, since "available, not installed" is a different fact from "does not exist" and
+  the user has to know the name to ask for it. Otherwise their absence reads as a gap in the
+  install rather than as a decision that was already made.
