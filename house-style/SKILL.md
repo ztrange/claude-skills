@@ -32,10 +32,23 @@ this skill cannot see.
 | IaC | CDK, in TypeScript | Observed exception: `expense-tracking` picked SST v3 to get out of CloudFormation — a deliberate ADR, not a drift |
 | Language | TypeScript everywhere, `strict: true` | |
 | UI | Whatever is current | Deliberately unnamed — see below |
+| Packages | pnpm; workspaces the moment there are two | `apps/*`, one lockfile, tooling configured once at the root |
+| Lint + format | Biome | One tool, one pass, one config. ESLint + Prettier only where a repo already runs them or needs a plugin Biome hasn't got — not as a new choice |
+| Unit + component | Vitest + React Testing Library | The one runner |
+| Acceptance / E2E | Playwright | A different layer, not a second runner |
+| Network in tests | MSW | |
+| Contracts | Zod, types inferred | See *one schema is the contract* |
+| Git hooks | lefthook | |
 
-**Don't take a framework name from this file.** "The current one" is the preference, so check what
-that is now rather than inheriting whatever was true when this was written. `expense-tracking` went
-React + Vite + TanStack Query + shadcn/ui; treat that as an example of the shape, not as the
+**Every name in that table is expected to age** — they are the current answer, not the permanent
+one, and they were current as of 2026-08. The rows turn over at very different speeds: UI fastest,
+which is why that one is left unnamed on purpose; the test and tooling picks slower, but not never.
+Treat a name that no longer looks right as a name to check, not as a rule to follow — and fix the
+row when you find it stale.
+
+**So don't take a framework name from this file.** "The current one" is the preference, so check
+what that is now rather than inheriting whatever was true when this was written. `expense-tracking`
+went React + Vite + TanStack Query + shadcn/ui; treat that as an example of the shape, not as the
 answer. Record the pick and the date in the project's `CLAUDE.md`, and as an ADR if it was a real
 trade-off.
 
@@ -68,7 +81,8 @@ trade-off.
   hand-kept validator next to a hand-kept OpenAPI file. In `expense-tracking` the Zod schemas in
   `shared` are the source: the server validates with them, the docs are generated from them, and
   the frontend imports the inferred types. Whatever the language, the same test applies — can two
-  copies of this contract disagree?
+  copies of this contract disagree? Fixtures and mock handlers build from those schemas too — a
+  fixture written by hand is a third copy, and it is the one that drifts first.
 - **Depth, seams and adapters**, in that vocabulary — a lot of behaviour behind a small interface,
   and the seam's *location* is its own decision. Call the Skill tool with `"codebase-design"` for
   the glossary rather than paraphrasing it. One adapter means a hypothetical seam; two mean a real
@@ -110,7 +124,39 @@ never wired up. A test nobody has watched fail is not known to test anything.
   typo and an outage. Find the equivalent gap in whatever the toolchain is.
 - **A migration has an oracle.** When replacing a system, the old one's output is the acceptance
   test: same inputs, same numbers, and the diff is the bug list.
-- **Framework follows the project.** A second test runner is a cost with no payer.
+- **Mock at the network boundary, not at the client.** MSW intercepts the transport, so the code
+  under test uses its real client, its real serialisation and its real error paths — stubbing the
+  client instead tests the stub. **No test reaches a real service**, and a test that needs one is
+  telling you the seam is missing.
+- **A coverage number nothing enforces is decoration.** v8 coverage with a threshold that fails
+  CI. Set it where the suite actually is and raise it deliberately; a number chosen to be
+  comfortable teaches the team to route around it.
+- **One runner, and layers above it.** Vitest for unit and component; Playwright is the acceptance
+  layer, split off by what it proves — a real browser, real navigation — not by taste. That is not
+  a second runner. A second runner in the *same* layer is a cost with no payer, and where a project
+  already has one, it follows the project.
+
+## Order of work on a new project
+
+- **A walking skeleton with green CI comes before any feature.** The whole pipeline — typecheck,
+  lint, test, build, e2e — passing on an empty app, first commit. Until green is reachable, a
+  failing test is ambiguous: nobody can tell the red you wrote from the red the pipeline was
+  already in, and red-before-green stops meaning anything. Standing the pipeline up later means
+  paying for it while also debugging real failures.
+- **The skeleton carries the smoke test** — the one that imports the real entry point and asserts
+  it loaded. That is the gap-filling test above, present from commit #1 rather than after the
+  first cold-start 500.
+- **Logging is day-one work, behind a seam.** Structured logs (pino is the current pick) through
+  one module the app calls, not `console.log` sprayed at call sites. Logging added after an
+  incident is logging designed by hindsight, and it cannot be retrofitted into code that never had
+  it. Put the error-tracker and telemetry adapter in at the same time, dormant — it activates when
+  there is somewhere to send to, and the seam is what makes that a config change.
+- **Local first while the requirements are still moving.** Run the whole thing on the machine,
+  behind storage and config seams, and add the cloud adapter when a real need forces it — hosting,
+  a second account, something the laptop genuinely can't do. The house default is still AWS and
+  serverless; this is about *when*, not *whether*. The local adapter and the cloud one are also
+  what make that seam real rather than hypothetical, which is the second adapter finally showing
+  up. Record the deferral as an ADR, so the next reader finds a decision rather than an omission.
 
 ## Documentation
 
@@ -135,6 +181,11 @@ never wired up. A test nobody has watched fail is not known to test anything.
 - **Commit after every chunk that is verified working**, not at the end. Verified means the build,
   test, synth or invoke actually ran and passed.
 - **Trunk-based: short-lived branches, draft PR early, a human merges.** Nothing auto-merges.
+- **Pre-commit hooks via lefthook, and every command scoped to its own file globs.** Typecheck on
+  `*.{ts,tsx}`, format on what that formatter owns, and so on. Unscoped, the hook runs the whole
+  toolchain on a docs-only or config-only commit — which then fails on a machine that has no
+  `node_modules` installed, in a repo where nothing it was checking even changed. The glob is what
+  keeps the hook honest about what the commit touched.
 - **Anything billable or deployed needs permission for that exact action.** Approved once is not
   approved again.
 - **A job that never runs looks exactly like one that does.** Surface freshness where someone will
