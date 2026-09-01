@@ -1,0 +1,124 @@
+---
+name: afk
+description: >-
+  Drive the work forward unattended: keep going on every thread that doesn't need the user, park
+  the ones that do with the question recorded, and when everything unblocked is done, spend the
+  remaining time making the next session cheaper — stale docs, contradictions, test gaps, dead
+  code. Use when the user says "afk", "I'm going afk", "keep going without me", "do what you can
+  without me", "work on this while I'm out", "I'll be back in an hour", "drive it yourself",
+  "sigue sin mí", "no me esperes", or otherwise hands over and leaves. Their absence is not
+  authorization: irreversible actions still wait, and a decision that needed them gets parked
+  rather than guessed.
+---
+
+# AFK — drive what can be driven, park what can't
+
+The user is gone and the clock is running. The value here is that they come back to **finished
+work plus a short list of decisions**, not to a session that stalled on question one — and not to
+a pile of changes made in their name that they never agreed to.
+
+## The line that does not move
+
+**Being away is the opposite of authorization.** Nobody is watching, so the gates matter more, not
+less. Still requiring an explicit yes: merging, deploying, anything billable, force-pushing,
+deleting data, sending anything outward, and any action whose undo is "restore from a backup and
+apologise". If the reasoning starts with *they'd probably want* — that is the feeling of about to
+do something that needs asking.
+
+Pushing branches and opening draft PRs is not in that set. Work that stays local is work they
+cannot see when they return, so **everything lands as a pushed branch with a draft PR**.
+
+## Working the threads
+
+Take stock first — observed state, not recollection: `git status`, open PRs and their CI, the task
+list, what the last session left half-done. Then, per thread:
+
+| | |
+|---|---|
+| **Nothing blocking it** | Drive it to done, verified, pushed, draft PR |
+| **Needs a decision only they can make** | Park it. Do not guess |
+| **Blocked on something external** — CI, a deploy, a third party | Park it, note what it waits on |
+
+**One thread, one branch, one PR.** The temptation while unattended is to keep piling into a
+single branch because nobody is there to object. Don't: a five-subject diff is unreviewable, and
+review is the whole point of coming back. If two threads touch the same files, do the one that
+unblocks the other and park the second with that noted.
+
+**Move on rather than escalating.** When a thread parks, the next thread starts. An AFK run that
+returns three finished pieces and two clear questions is a good run; one that returns five
+half-finished pieces because it kept circling the hard one is not.
+
+## Parking properly
+
+A parked thread is not an abandoned one. It gets, in this order:
+
+1. **Committed and pushed**, even mid-work — a WIP commit whose message says what is half-done and
+   what it breaks. Never a dirty tree, never a stash: the stash stack is shared across worktrees
+   and another session can pop it.
+2. **A draft PR whose body carries the question** — what the choice is, the options, what each
+   costs, and a recommendation. Put it in the PR rather than in chat: chat scrollback dies with
+   the session, the PR is still there tomorrow.
+3. **One line in the return brief**, so they don't have to open five PRs to find the five
+   questions.
+
+The recommendation matters. "I need your input on the cache strategy" is a question they have to
+reconstruct the context for; "write-through or write-behind — recommend write-through, because the
+read path already assumes freshness" is one they can answer in a word.
+
+## When everything unblocked is done
+
+Don't stop, and don't invent features. Spend the time on the work that never gets prioritised
+because it is nobody's ticket — and take it **in this order**, because it is ranked by what it
+costs to leave undone:
+
+1. **Things that actively mislead.** A doc that contradicts the code, two files that disagree, a
+   count in prose that no longer matches the thing it counts, a command in the README that fails.
+   These are worse than absent: the next session trusts them and goes the wrong way. When two
+   sources disagree, check which one the code agrees with, fix the other, and record which won and
+   why — a contradiction silently resolved is one that comes back.
+2. **Things that make every future session cheaper.** This is the highest-leverage category and
+   the least obvious. A `CLAUDE.md` gap that makes every session re-derive the same fact. A ten-
+   command dance that should be one script. A test command that dumps thousands of lines when it
+   passes, flooding context for no information. A suite so slow nobody runs it before pushing.
+   Fixtures duplicated across ten test files. Each of these is a tax paid on every future run.
+3. **Test gaps where the failure would be expensive** — the untested failure path, the gap the
+   build does not check, the assertion nobody has watched fail. Add the test, break the thing on
+   purpose to confirm the test fires, put it back. A test added while unattended that has never
+   been seen to fail is decoration.
+4. **Dead code and stale scaffolding** — last, because it is the riskiest and pays least. Removal
+   needs an observed fact: the search that shows nothing references it, quoted. Not "this looks
+   unused". If the evidence isn't conclusive, park it as a PR that proposes the deletion instead
+   of doing it.
+
+## Not while unattended
+
+Each of these produces a diff too large to review against a decision nobody was there to weigh:
+
+- Dependency upgrades, framework bumps, toolchain swaps
+- Repo-wide reformatting or lint-rule changes
+- Renames across the codebase
+- Architecture changes, or refactors that alter behaviour
+- Anything that starts "while I was in there I also"
+
+A behaviour-preserving cleanup inside one module is fine. The test is whether a reviewer can check
+it without reconstructing your reasoning.
+
+## Budget
+
+An unattended run is where budget goes quietly. When it starts running low, stop opening threads
+and land what is open — call the Skill tool with `"low-fuel"` for the landing order. Coming back to
+three finished PRs and a note beats coming back to six branches that never got pushed.
+
+## The return brief
+
+Short, and the first thing they see. This is what the whole run was for:
+
+```
+**Landed** — <what, with the PR url>                             (verified; say if not)
+**Parked** — <thread> — needs: <the question, with a recommendation, PR url>
+**Left alone** — <what you didn't touch and why>
+```
+
+Honest about gaps: what failed, what was skipped, what could not be verified. A brief that reads
+as clean when a check was skipped is worse than the skipped check — they will make the next
+decision believing it passed.
