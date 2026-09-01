@@ -48,6 +48,24 @@ unblocks the other and park the second with that noted.
 returns three finished pieces and two clear questions is a good run; one that returns five
 half-finished pieces because it kept circling the hard one is not.
 
+## Delegate the reading, keep the deciding
+
+**An unattended run ends when the context does, not when the work does.** Nobody is there to
+`/clear` and restart you, so every file dump, search sweep, build log and test transcript the main
+thread absorbs directly is time taken off the end of the run. This is the single biggest lever on
+how much gets finished, which is why it belongs here rather than as an afterthought.
+
+So push the raw material into subagents and keep only what you concluded — call the Skill tool with
+`"delegate"` for how to write a self-contained prompt with an explicit return contract, and for
+worktree isolation when threads write concurrently. Good candidates: exploring an unfamiliar area,
+searching for every call site, reading ten files to answer one question, running a long suite.
+Anything whose value to you is a conclusion rather than the material itself.
+
+Two things stay in the main thread. **Whether a thread is driven or parked** is the judgement this
+skill is about, and it needs the whole picture rather than one agent's slice. And **the return
+brief**, which is your account of the run — not something to assemble from reports you did not
+check. A subagent's answer is a claim; verify the load-bearing ones before they reach the brief.
+
 ## Parking properly
 
 A parked thread is not an abandoned one. It gets, in this order:

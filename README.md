@@ -32,8 +32,9 @@ edits are live — there is no build or install step for day-to-day use.
   the question and a recommendation in the PR body where it survives the session. When everything
   unblocked is done, the time goes on the work nobody tickets — contradictions and stale docs
   first (they actively mislead), then whatever makes the next session cheaper, then test gaps,
-  then dead code with the evidence quoted. Absence is not authorization: merges, deploys and
-  deletions still wait.
+  then dead code with the evidence quoted. Leans on `delegate` throughout, since an unattended run
+  ends when the context does rather than when the work does. Absence is not authorization: merges,
+  deploys and deletions still wait.
 
 - **[`house-style`](house-style/SKILL.md)** — my engineering conventions for a project that doesn't
   know them yet: AWS + serverless + CDK + TypeScript where the choice is open, invariants made
