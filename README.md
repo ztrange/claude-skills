@@ -27,6 +27,14 @@ edits are live — there is no build or install step for day-to-day use.
   the dead ends already walked, and the decision stated as options with a recommendation. The
   opposite move to `tldr` — it expands, because the problem there is missing context, not volume.
 
+- **[`afk`](afk/SKILL.md)** — I'm away; drive it. Every thread that doesn't need me gets finished
+  and pushed as its own draft PR; every thread that does gets *parked* rather than guessed, with
+  the question and a recommendation in the PR body where it survives the session. When everything
+  unblocked is done, the time goes on the work nobody tickets — contradictions and stale docs
+  first (they actively mislead), then whatever makes the next session cheaper, then test gaps,
+  then dead code with the evidence quoted. Absence is not authorization: merges, deploys and
+  deletions still wait.
+
 - **[`house-style`](house-style/SKILL.md)** — my engineering conventions for a project that doesn't
   know them yet: AWS + serverless + CDK + TypeScript where the choice is open, invariants made
   structural rather than documented, one schema as the contract, test-first with the red verified
