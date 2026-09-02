@@ -98,14 +98,35 @@ carries that answer.
 Split work by **subsystem or by question**, not by file — one agent per file means N reports that
 all need cross-referencing back in the main thread.
 
+## Pick the type, and pick the model
+
+`Agent` takes both. The type decides what tools it has; the model decides what it costs and how
+well it thinks. Choose the type first: `Explore` for read-only search fan-out, `Plan` for
+implementation strategy, `general-purpose` / `claude` for anything that writes.
+
+Then the model — `model: "haiku" | "sonnet" | "opus" | "fable"`, which overrides whatever the agent
+definition defaults to. **Match it to whether the agent is gathering or judging:**
+
+| | Work | Model |
+|---|---|---|
+| **Gathering** | Searching, reading many files to answer one question, collecting call sites, summarising a long log | Cheap. The judgement stays with you; the agent's job is to compress |
+| **Judging** | Reviewing for correctness, choosing between approaches, adversarially verifying a claim, anything you'd act on without re-deriving | Strong. Downgrading here doesn't save money, it moves the error into a report you will trust |
+
+The test is **if this report is wrong, will you notice?** A missed call site announces itself when
+the change fails. A plausible-but-wrong "nothing else references this, safe to delete" does not —
+it is indistinguishable from the right answer until the damage is done, which is exactly the class
+of claim worth paying for.
+
+Fan-out is where the saving compounds: five gathering agents on a cheap model against one strong
+orchestrator is the shape this skill is for. Two details worth knowing — omitting `model` takes the
+agent definition's own model rather than yours, and `fork` ignores the parameter entirely, since a
+fork always inherits the parent's model.
+
 ## Follow up, don't respawn
 
 A second `Agent` call starts fresh and pays the whole ramp-up again. `SendMessage` to the agent's
 ID or name continues it with its context intact — use it for "now also check X", "the fix broke
 test Y", "give me the line number for that third claim". `ListAgents` shows who's reachable.
-
-Pick the type deliberately: `Explore` for read-only search fan-out, `Plan` for implementation
-strategy, `general-purpose` / `claude` for anything that writes.
 
 ## Orchestrator hygiene
 
