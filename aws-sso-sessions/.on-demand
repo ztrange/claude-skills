@@ -2,9 +2,13 @@ Not linked into ~/.claude/skills/ by default, and /sync-config leaves it alone.
 
 This skill does a job that happens once per machine — migrating ~/.aws/config to sso-session
 blocks. Carrying it in the always-loaded skill list for the rest of time costs trigger surface
-for no benefit, so it gets linked for the migration and unlinked afterwards:
+for no benefit, so it gets linked for the migration and unlinked afterwards. Run these from the
+primary clone, not a worktree — a link into a worktree dangles as soon as the worktree is removed:
 
-  ln -s ~/Documents/repos/personal/claude-skills/aws-sso-sessions ~/.claude/skills/aws-sso-sessions
+  ln -s "$PWD/aws-sso-sessions" ~/.claude/skills/aws-sso-sessions
   rm ~/.claude/skills/aws-sso-sessions
+
+The link is only visible to the Skill tool after one Claude Code restart, since it is a new
+directory under ~/.claude/skills/ rather than an edit to an already-linked target.
 
 Any skill directory carrying this marker is treated the same way.

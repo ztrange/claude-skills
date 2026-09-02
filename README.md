@@ -99,7 +99,9 @@ edits are live — there is no build or install step for day-to-day use.
   the three settings in that panel is the one that matters. Backs up before writing, verifies the
   rewrite without opening a browser, and never runs `aws sso login` itself. The job happens once
   per machine, so it carries an `.on-demand` marker: `/sync-config` deliberately leaves it
-  unlinked, and it gets installed for the migration and removed after.
+  unlinked, and it gets installed for the migration and removed after. Link it from the primary
+  clone — a link into a worktree dangles the moment that worktree is removed — and restart Claude
+  Code once, since a new directory under `~/.claude/skills/` is not seen until then.
 
   ```bash
   ln -s "$PWD/aws-sso-sessions" ~/.claude/skills/aws-sso-sessions   # then, when done:
