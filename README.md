@@ -83,6 +83,15 @@ edits are live — there is no build or install step for day-to-day use.
   a delta is unreadable without the set it applies to, and anomalies (dangling links, links into a
   worktree) are flagged in the row rather than a footnote.
 
+- **[`housekeeping`](housekeeping/SKILL.md)** — clean the repo of what nobody is using: local
+  branches whose PR landed, worktrees whose work is provably on `main`, remote-tracking refs for
+  branches gone from origin, dead worktree registrations. Every deletion cites an observed fact —
+  PR state and head sha, ancestry of `origin/main`, a clean tree, no process with its cwd inside —
+  never age or a name that looks temporary, and never `git branch --merged`, which lies under
+  squash merges. Remote branches and stray files wait for an explicit yes; stashes and anything
+  with an open PR are never touched. `wrap-up` closes out *this* session's work; this one sweeps
+  everything the previous sessions left behind.
+
 - **[`aws-sso-sessions`](aws-sso-sessions/SKILL.md)** — **on demand, not installed by default.**
   Migrates `~/.aws/config` off the legacy per-profile SSO form onto `sso-session` blocks, which is
   what buys several SSO logins at once and refresh tokens that outlive the first hour; then
