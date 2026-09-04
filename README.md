@@ -59,8 +59,9 @@ edits are live — there is no build or install step for day-to-day use.
 
 - **[`merge`](merge/SKILL.md)** — land a PR on a `main` that may have moved: detect it locally
   rather than trusting `mergeStateStatus`, rebase, force-push under a *pinned* lease (the bare one
-  silently clobbers after any fetch), read the CI result instead of the tick, then merge and clean
-  up branch, primary clone and worktree.
+  silently clobbers after any fetch), read the CI result instead of the tick — *and* instead of the
+  missing tick, since an empty rollup and an empty `conclusion` are both what a not-yet-started
+  check looks like — then merge and clean up branch, primary clone and worktree.
 
 - **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
