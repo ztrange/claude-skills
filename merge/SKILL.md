@@ -14,8 +14,9 @@ description: >-
 # Merge — land it on a `main` that has not moved under you
 
 **Merge only when the user says to.** Approving one PR is not approving the next, and a green PR is
-not an instruction. Saying it in advance counts — "merge it when green" given as they leave is a
-"merge it" scoped to what it named, and the `afk` skill says how narrowly to read it.
+not an instruction. Saying it in advance counts, and so does "afk": that skill carries a standing
+merge permission for whatever the run finishes, so under it this step is already satisfied — every
+step after it still applies.
 
 **`main` moving is the default case, not the exception.** Any repo with more than one agent or one
 human gains commits between opening a PR and landing it. Every step below assumes it happened and

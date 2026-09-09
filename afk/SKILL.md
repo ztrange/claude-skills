@@ -8,9 +8,9 @@ description: >-
   without me", "work on this while I'm out", "I'll be back in an hour", "drive it yourself",
   "sigue sin mí", "no me esperes", or otherwise hands over and leaves. Their absence is not
   authorization: irreversible actions still wait, and a decision that needed them gets parked
-  rather than guessed. The one standing exception is a merge authorization given at hand-over —
-  "merge it when green", "land #12 if CI passes", "mergea lo que quede verde" — which is honoured
-  exactly as scoped, through the `merge` skill, and never widened.
+  rather than guessed. Merging is the one exception, and it is built in: saying "afk" is the
+  standing instruction to merge whatever the run finishes, through the `merge` skill, unless the
+  user says "don't merge" on the way out.
 ---
 
 # AFK — drive what can be driven, park what can't
@@ -22,61 +22,46 @@ a pile of changes made in their name that they never agreed to.
 ## The line that does not move
 
 **Being away is the opposite of authorization.** Nobody is watching, so the gates matter more, not
-less. Still requiring an explicit yes: merging, deploying, anything billable, force-pushing,
-deleting data, sending anything outward, and any action whose undo is "restore from a backup and
-apologise". If the reasoning starts with *they'd probably want* — that is the feeling of about to
-do something that needs asking.
+less. Still requiring an explicit yes: deploying, anything billable, force-pushing, deleting data,
+sending anything outward, and any action whose undo is "restore from a backup and apologise". If
+the reasoning starts with *they'd probably want* — that is the feeling of about to do something
+that needs asking. None of these has an advance form: "deploy it when green" or "delete the old
+bucket while I'm out" is a request to park with the question recorded, not a request to do it.
 
-Pushing branches and opening draft PRs is not in that set. Work that stays local is work they
-cannot see when they return, so **everything lands as a pushed branch with a draft PR**.
+Pushing branches and opening PRs is not in that set. Work that stays local is work they cannot see
+when they return, so **everything lands as a pushed branch with a PR** — merged if it is finished,
+draft if it is parked.
 
-The one gate they can open in advance is the merge, and only by saying so at hand-over — see
-[Merging under a standing authorization](#merging-under-a-standing-authorization). Everything
-else in the list above has no advance form: "deploy it when green" or "delete the old bucket while
-I'm out" is a request to park with the question recorded, not a request to do it.
+## Merging is included
 
-## Merging under a standing authorization
+**Saying "afk" is the merge instruction for the run.** It is not inferred from their absence; it is
+what this skill means, and what the `merge` skill's "only when the user says to" is satisfied by.
+They do not have to add "merge it when green" — a finished thread is merged, not left as a draft
+for them to click through when they return. The whole point of the run is that they come back to
+work that has *landed*.
 
-"Afk — merge it when CI is green" is the user saying *merge* ahead of time, and the `merge` skill
-counts being told in advance as being told. What makes it authorization is that it is **explicit,
-given by them in chat at or after hand-over, and names what it covers**. Nothing else does:
+What "finished" means does not loosen because nobody is watching:
 
-| Counts | Does not count |
-|---|---|
-| "merge #12 when green" | "ship it" said last week about a different PR |
-| "land whatever you finish, if CI passes" | "do what you can", "you know what I want" |
-| "mergea el de auth cuando pase CI" | A green tick, an approving review, `CLAUDE.md` saying merges are rebase by default |
-| A PR they name, or a class they name ("what you open this run") | Anything inferred from what they would probably want |
+- **Verified, and CI green by the `merge` skill's gate** — the rollup, `total > 0`, nothing
+  pending, nothing failed. Not `gh pr checks` exiting 0, not a tick in the UI, not an empty rollup
+  read as "no CI". A PR whose checks never start does not merge; it parks with that noted.
+- **No open question in the PR body.** A parked PR is never merged, whatever its CI says — it
+  carries a decision they have not made, and merging it makes the decision for them.
+- **Not on the [Not while unattended](#not-while-unattended) list.** The permission covers what
+  the run may finish, not what it should never have started.
 
-**Scope is exactly what they said, read narrowly.**
+**The permission covers the merge, not what the merge skill hands back.** A rebase conflict is
+still theirs to resolve; a `BLOCKED` merge state is still a gate not to walk around; a pinned-lease
+rejection still means stop and look. The skill's own limits apply unchanged — "afk" replaces the
+"merge it" at step 0, nothing after it.
 
-- **A named PR** covers that PR. "Merge #12" does not cover #13, even if #13 is smaller and greener.
-- **A class** — "whatever you finish", "anything green" — covers PRs that reach *finished* during
-  the run: verified, CI passing, no open question in the body. A parked PR is never inside the
-  class, whatever its CI says, because it carries a decision they have not made. Nor is a PR that
-  falls under [Not while unattended](#not-while-unattended); the authorization said *merge what
-  you finish*, not *finish things I would have stopped you from starting*.
-- **The diff they authorized is the diff that lands.** A rebase onto `main` keeps the
-  authorization — same change, new base. A commit that adds or alters content after they left
-  voids it for that PR: they authorized the change they had seen. Park it with "changed since you
-  authorized it; re-say merge".
-- **Conditions are gates, not suggestions.** "When green" means the `merge` skill's step 5 —
-  the rollup, `total > 0`, nothing pending, nothing failed — not `gh pr checks` exiting 0 and not
-  a tick in the UI. A PR whose CI never starts, or whose rollup stays empty past the settle
-  window, does not meet "when green"; it parks with that noted.
-- **Silence about a PR is a no.** If the authorization is ambiguous about whether a given PR is
-  inside it — "merge the docs one" and there are two — park both with the question. The cost of
-  asking is a line in the brief; the cost of guessing is a merge on `main` they did not agree to.
+**Narrowing is theirs, by saying so.** "Afk, but don't merge", "afk, leave #12 for me to look at",
+"no mergees nada" — an explicit hold on the way out is honoured as written, and only for what it
+names. A hold given last week about a different PR does not carry.
 
-**Authorization covers the merge, not what the merge skill hands back.** A rebase conflict is still
-theirs to resolve; a `BLOCKED` merge state is still a gate not to walk around; a pinned-lease
-rejection still means stop and look. The skill's own limits apply unchanged — the standing yes
-replaces the "merge it" at step 0, nothing after it.
-
-**Every merge made under authorization is a line in the brief with the words that authorized it
-quoted**, so they can check the scope against what they meant without reconstructing the chat.
-Then the cleanup the merge skill does anyway: remote branch deleted, primary clone pulled,
-worktree removed.
+**Every merge is a line in the brief with its merge sha.** They should not have to diff `main`
+against their memory to find out what landed while they were out. Then the cleanup the merge skill
+does anyway: remote branch deleted, primary clone pulled, worktree removed.
 
 ## Working the threads
 
@@ -85,7 +70,7 @@ list, what the last session left half-done. Then, per thread:
 
 | | |
 |---|---|
-| **Nothing blocking it** | Drive it to done, verified, pushed, draft PR |
+| **Nothing blocking it** | Drive it to done, verified, pushed, PR opened, merged |
 | **Needs a decision only they can make** | Park it. Do not guess |
 | **Blocked on something external** — CI, a deploy, a third party | Park it, note what it waits on |
 
@@ -175,15 +160,15 @@ it without reconstructing your reasoning.
 
 An unattended run is where budget goes quietly. When it starts running low, stop opening threads
 and land what is open — call the Skill tool with `"low-fuel"` for the landing order. Coming back to
-three finished PRs and a note beats coming back to six branches that never got pushed.
+three merged PRs and a note beats coming back to six branches that never got pushed.
 
 ## The return brief
 
 Short, and the first thing they see. This is what the whole run was for:
 
 ```
-**Merged** — <what, merge sha> — under: "<their words, quoted>"   (only if they authorized it)
-**Landed** — <what, with the PR url>                             (verified; say if not)
+**Merged** — <what, PR url, merge sha>                          (verified; say if not)
+**Landed unmerged** — <what, PR url> — why: <the reason it did not merge>
 **Parked** — <thread> — needs: <the question, with a recommendation, PR url>
 **Left alone** — <what you didn't touch and why>
 ```

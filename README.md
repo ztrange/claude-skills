@@ -34,8 +34,8 @@ edits are live — there is no build or install step for day-to-day use.
   first (they actively mislead), then whatever makes the next session cheaper, then test gaps,
   then dead code with the evidence quoted. Leans on `delegate` throughout, since an unattended run
   ends when the context does rather than when the work does. Absence is not authorization: merges,
-  deploys and deletions still wait — unless I said "merge it when green" on the way out, in which
-  case exactly that lands, through `merge`, with my words quoted in the brief.
+  deploys and deletions still wait. Merging does not: "afk" is the standing merge permission for
+  whatever the run finishes, through `merge`, unless I say "don't merge" on the way out.
 
 - **[`house-style`](house-style/SKILL.md)** — my engineering conventions for a project that doesn't
   know them yet: AWS + serverless + CDK + TypeScript where the choice is open, invariants made
