@@ -57,8 +57,9 @@ brevity; brevity beats everything else.
   review, to CI, and to the next session.
 - Not finished, or unsure it's right? Still push, and open it as a draft PR saying what's missing.
   A draft is reviewable; a local commit is not.
-- Never merge unless I say so. Approving one PR is not approving the next. The merge is the only
-  gate — don't borrow its caution for the push.
+- Never merge unless I say so — and `afk` is me saying so, for what that run finishes. Otherwise
+  approving one PR is not approving the next. The merge is the only gate — don't borrow its
+  caution for the push.
 - Rebase-merge by default, delete the branch, leave the tree clean. So keep the commits on a branch
   individually meaningful — each one lands on `main` as itself. Squash only when I ask, or when the
   branch is a scratchy back-and-forth whose history is noise.
