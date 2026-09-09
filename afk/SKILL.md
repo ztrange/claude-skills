@@ -8,7 +8,9 @@ description: >-
   without me", "work on this while I'm out", "I'll be back in an hour", "drive it yourself",
   "sigue sin mí", "no me esperes", or otherwise hands over and leaves. Their absence is not
   authorization: irreversible actions still wait, and a decision that needed them gets parked
-  rather than guessed.
+  rather than guessed. The one standing exception is a merge authorization given at hand-over —
+  "merge it when green", "land #12 if CI passes", "mergea lo que quede verde" — which is honoured
+  exactly as scoped, through the `merge` skill, and never widened.
 ---
 
 # AFK — drive what can be driven, park what can't
@@ -27,6 +29,54 @@ do something that needs asking.
 
 Pushing branches and opening draft PRs is not in that set. Work that stays local is work they
 cannot see when they return, so **everything lands as a pushed branch with a draft PR**.
+
+The one gate they can open in advance is the merge, and only by saying so at hand-over — see
+[Merging under a standing authorization](#merging-under-a-standing-authorization). Everything
+else in the list above has no advance form: "deploy it when green" or "delete the old bucket while
+I'm out" is a request to park with the question recorded, not a request to do it.
+
+## Merging under a standing authorization
+
+"Afk — merge it when CI is green" is the user saying *merge* ahead of time, and the `merge` skill
+counts being told in advance as being told. What makes it authorization is that it is **explicit,
+given by them in chat at or after hand-over, and names what it covers**. Nothing else does:
+
+| Counts | Does not count |
+|---|---|
+| "merge #12 when green" | "ship it" said last week about a different PR |
+| "land whatever you finish, if CI passes" | "do what you can", "you know what I want" |
+| "mergea el de auth cuando pase CI" | A green tick, an approving review, `CLAUDE.md` saying merges are rebase by default |
+| A PR they name, or a class they name ("what you open this run") | Anything inferred from what they would probably want |
+
+**Scope is exactly what they said, read narrowly.**
+
+- **A named PR** covers that PR. "Merge #12" does not cover #13, even if #13 is smaller and greener.
+- **A class** — "whatever you finish", "anything green" — covers PRs that reach *finished* during
+  the run: verified, CI passing, no open question in the body. A parked PR is never inside the
+  class, whatever its CI says, because it carries a decision they have not made. Nor is a PR that
+  falls under [Not while unattended](#not-while-unattended); the authorization said *merge what
+  you finish*, not *finish things I would have stopped you from starting*.
+- **The diff they authorized is the diff that lands.** A rebase onto `main` keeps the
+  authorization — same change, new base. A commit that adds or alters content after they left
+  voids it for that PR: they authorized the change they had seen. Park it with "changed since you
+  authorized it; re-say merge".
+- **Conditions are gates, not suggestions.** "When green" means the `merge` skill's step 5 —
+  the rollup, `total > 0`, nothing pending, nothing failed — not `gh pr checks` exiting 0 and not
+  a tick in the UI. A PR whose CI never starts, or whose rollup stays empty past the settle
+  window, does not meet "when green"; it parks with that noted.
+- **Silence about a PR is a no.** If the authorization is ambiguous about whether a given PR is
+  inside it — "merge the docs one" and there are two — park both with the question. The cost of
+  asking is a line in the brief; the cost of guessing is a merge on `main` they did not agree to.
+
+**Authorization covers the merge, not what the merge skill hands back.** A rebase conflict is still
+theirs to resolve; a `BLOCKED` merge state is still a gate not to walk around; a pinned-lease
+rejection still means stop and look. The skill's own limits apply unchanged — the standing yes
+replaces the "merge it" at step 0, nothing after it.
+
+**Every merge made under authorization is a line in the brief with the words that authorized it
+quoted**, so they can check the scope against what they meant without reconstructing the chat.
+Then the cleanup the merge skill does anyway: remote branch deleted, primary clone pulled,
+worktree removed.
 
 ## Working the threads
 
@@ -132,6 +182,7 @@ three finished PRs and a note beats coming back to six branches that never got p
 Short, and the first thing they see. This is what the whole run was for:
 
 ```
+**Merged** — <what, merge sha> — under: "<their words, quoted>"   (only if they authorized it)
 **Landed** — <what, with the PR url>                             (verified; say if not)
 **Parked** — <thread> — needs: <the question, with a recommendation, PR url>
 **Left alone** — <what you didn't touch and why>
