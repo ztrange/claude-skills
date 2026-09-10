@@ -23,9 +23,12 @@ edits are live — there is no build or install step for day-to-day use.
   tree.
 
 - **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me from
-  zero before asking. Mechanism before failure, every name carrying the clause that resolves it,
-  the dead ends already walked, and the decision stated as options with a recommendation. The
-  opposite move to `tldr` — it expands, because the problem there is missing context, not volume.
+  zero. Mechanism before failure, every name carrying the clause that resolves it, and what was
+  already ruled out. The sections follow what I pointed at: a whole decision gets the dead ends and
+  the options with a recommendation; a single option gets what it actually does and what it costs
+  against the others; a finding I couldn't parse gets how it's known and what it means, and no
+  invented question if there was never a decision in it. The opposite move to `tldr` — it expands,
+  because the problem there is missing context, not volume.
 
 - **[`afk`](afk/SKILL.md)** — I'm away; drive it. Every thread that doesn't need me gets finished
   and pushed as its own draft PR; every thread that does gets *parked* rather than guessed, with
