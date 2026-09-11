@@ -43,6 +43,28 @@ brevity; brevity beats everything else.
   afterwards; don't swap it for an easier word.
 - No closing offer of help unless a decision is waiting on me.
 
+## Spending my money
+
+- **Default to the cheapest tier that does the job.** The cheap default never needs justifying;
+  the expensive one does, in advance, in words, before it exists.
+- **The spend you'll miss is the recurring one.** A deploy reads as billable and gets asked about;
+  a line in a YAML file that bills on every push from now until someone notices does not. Same
+  class: CI runner size and OS, matrix legs, cron frequency, always-on infra (NAT gateways,
+  provisioned capacity, a warm instance), log retention, a paid API called inside a loop.
+- **CI runs on Linux.** GitHub-hosted macOS bills $0.062/min against Linux's $0.006 — ~10× for the
+  same green tick; Windows is $0.010, ~1.7×. So `ubuntu-latest`, unless the thing under test
+  genuinely needs the other OS — and then say so and ask *before* writing the file. (Standard
+  runners are free on public repos, so this bites in the private ones, which is most of mine.)
+- **Every CI job carries `timeout-minutes`.** A hung job with no timeout bills to GitHub's 6-hour
+  ceiling, and it looks exactly like a slow one while it does.
+- **A choice that costs money is a line in the PR body and in Done** — what it costs, per what,
+  and the cheaper option you didn't take. I should not have to find the price by reading a diff.
+- **Don't widen what already spends.** Another matrix leg, a tighter cron, a bigger runner, a
+  dropped timeout, a longer retention — each is a new decision, not a tweak, even when the thing
+  itself was already approved.
+- Cheap and slow beats fast and metered unless I said otherwise. My time is not the constraint CI
+  is optimising for.
+
 ## Which repo you work in
 
 - **The project repo is the one the session started in. Work stays there.** Another repo is not

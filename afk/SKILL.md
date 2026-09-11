@@ -26,7 +26,12 @@ a pile of changes made in their name that they never agreed to.
 less. Still requiring an explicit yes: deploying, anything billable, force-pushing, deleting data,
 sending anything outward, and any action whose undo is "restore from a backup and apologise". If
 the reasoning starts with *they'd probably want* — that is the feeling of about to do something
-that needs asking. None of these has an advance form: "deploy it when green" or "delete the old
+that needs asking.
+
+**"Billable" includes the config-shaped kind.** A deploy announces itself; a workflow file, a cron
+schedule, an extra matrix leg or a `runs-on:` that isn't `ubuntu-latest` does not, and it bills on
+every run from then on rather than once. Nothing that creates or widens a recurring cost gets
+written unattended — it goes in the brief as a proposal with the price on it. None of these has an advance form: "deploy it when green" or "delete the old
 bucket while I'm out" is a request to park with the question recorded, not a request to do it.
 
 Pushing branches and opening PRs is not in that set. Work that stays local is work they cannot see
@@ -163,6 +168,7 @@ Each of these produces a diff too large to review against a decision nobody was 
 - Architecture changes, or refactors that alter behaviour
 - Anything that starts "while I was in there I also"
 - Anything in a repo other than the project one — including a change they'd obviously want
+- Anything that starts something billing on a schedule — a new workflow, a cron, a bigger runner
 
 A behaviour-preserving cleanup inside one module is fine. The test is whether a reviewer can check
 it without reconstructing your reasoning.
