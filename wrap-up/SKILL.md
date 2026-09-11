@@ -18,6 +18,11 @@ never gets skipped past. Nothing here deletes work that isn't provably somewhere
 Run `/sitrep`. If anything is still in **Remaining** or **Needs you**, stop and show it — closing
 out unfinished work is the user's call, not yours.
 
+That rule is for open questions the user's actual work left behind, not ones this wrap-up run
+invents about its own mechanics. "Confirm removing the worktree" is not a real **Needs you** —
+whether the worktree holds unique work is a fact steps 2–4 establish, not a question to bounce
+back. Don't let the sitrep manufacture a question that the rest of this skill answers.
+
 ## 2. Land the change
 
 - Uncommitted changes → commit on the branch (never on `main`), message carrying the why.
@@ -36,10 +41,16 @@ Verify **all** of these from observed state before removing anything:
 
 | Check | How | If it fails |
 |---|---|---|
-| Work is merged | `gh pr view <n> --json state` says `MERGED` | Stop. `git branch --merged` lies under squash merges — never decide from it |
+| Work is merged, **or** never existed | `gh pr view <n> --json state` says `MERGED`; **or**, if there's no PR and no upstream, `git log main..HEAD --oneline` is empty | Stop. `git branch --merged` lies under squash merges — never decide from it |
 | Nothing uncommitted | `git status --short` empty | Stop and show the files |
 | Nothing unpushed | `git log @{u}.. --oneline` empty | Stop and show the commits |
 | Not in use elsewhere | `git worktree list`, open PRs | Never touch a worktree another session holds or that has an open PR |
+
+The "never existed" branch is for a worktree that never diverged from `main` at all — no PR, no
+upstream, zero commits ahead. That's not a smaller version of "merged"; it's proof there was never
+anything to merge, established the same way every other row here is: by checking, not by asking.
+The other three rows still apply in full — a worktree with nothing ahead of `main` can still have
+uncommitted changes sitting in it, and those still stop the sequence.
 
 Then remove it:
 
