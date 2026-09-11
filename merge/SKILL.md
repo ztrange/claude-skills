@@ -3,12 +3,14 @@ name: merge
 description: >-
   Land a pull request safely: check `main` has not moved since the branch was cut, rebase onto it
   and force-push under a pinned lease if it has, read the CI result rather than trusting a tick —
-  or the absence of one — then rebase-merge and clean up the branch, the primary clone and the
-  worktree. Use when the user says "merge it", "land this", "merge the PR", "ship it", "mergea", or
+  or the absence of one — then rebase-merge, cut the capability tag in a repo that versions that
+  way, and clean up the branch, the primary clone and the worktree. Use when the user says "merge it", "land this", "merge the PR", "ship it", "mergea", or
   "haz merge". Never merges without being told to. Treats the local `HEAD..origin/main` count as the
   authority on whether `main` moved, pins the force-with-lease to a recorded sha because the bare
   form silently clobbers, never lets an empty check rollup or an empty `conclusion` count as a pass,
-  and confirms from PR state because `gh`'s own exit code lies here.
+  and confirms from PR state because `gh`'s own exit code lies here. Tags only a repo that already
+  carries version tags, and reads the next number with git's version sort, since lexical sort makes
+  `v0.9` outrank `v0.10`.
 ---
 
 # Merge — land it on a `main` that has not moved under you
@@ -198,6 +200,52 @@ gh pr view <n> --json state -q .state        # expect MERGED
 git push origin --delete <branch>
 ```
 
+## 6b. Tag the capability, if this repo versions that way
+
+**Opt-in by existence.** Tag only a repo that already carries tags in this shape. A repo with no
+tags has not asked for versioning, and inventing one on its behalf is a decision that is not yours:
+
+```bash
+git fetch --tags origin
+LATEST=$(git tag --sort=-v:refname | head -1)   # empty => this repo does not version. Stop here.
+```
+
+**`--sort=-v:refname`, never `sort` or `sort -r`.** Version sort knows `v0.10 > v0.9`; lexical sort
+does not. Observed on ztrange/veri with ten tags present: `git tag | sort | tail -1` answers `v0.9`,
+so the next tag computes as `v0.10` — which already exists, and `git tag` then refuses or, worse,
+`-f` moves the existing one onto the wrong commit.
+
+**A version means a capability changed.** Bump when the merged range contains a `feat:` or `fix:`
+that touched the product; skip the tag when the PR was documentation, tests, refactoring or chore
+only, and say in the report that you skipped it and why. Read the range, do not guess:
+
+```bash
+git fetch origin && git log --format='%h %s' ${LATEST}..origin/main
+```
+
+A `fix:` that only repairs documentation is a documentation PR — the commit type describes the
+change, not the thing changed. This is the one judgement in the step.
+
+Then tag the merge result on `main` — not the branch tip, which no longer exists:
+
+```bash
+NEXT="v0.$(( ${LATEST#v0.} + 1 ))"
+git tag -a "$NEXT" origin/main -m "<the capability, in the issue's own words>"
+git push origin "$NEXT"
+```
+
+The message is what a reader scans months later, so it states the **capability**, not the change:
+"supervisor retries a killed-stuck leaf up to a bounded budget", not "merge PR #13". The issue
+title is usually already that sentence.
+
+Backfilling an old tag is the same command plus a retro-date, because an annotated tag's
+`creatordate` is the *tagger* date and defaults to now — ten backfilled tags otherwise all claim to
+have shipped today:
+
+```bash
+GIT_COMMITTER_DATE="$(git log -1 --format=%aI <sha>)" git tag -a v0.N <sha> -m "<capability>"
+```
+
 ## 7. Leave the tree as you found it
 
 ```bash
@@ -205,8 +253,9 @@ git -C <primary-clone> pull --ff-only        # the primary is the only place mai
 git worktree remove <path>                   # once nothing is uncommitted
 ```
 
-Report the merge commit sha, and say explicitly if anything was skipped — an unresolved conflict
-handed back, a check that was pending, a branch left in place.
+Report the merge commit sha **and the tag**, and say explicitly if anything was skipped — an
+unresolved conflict handed back, a check that was pending, a branch left in place, a tag not cut
+because the PR carried no capability.
 
 ## Limits
 
