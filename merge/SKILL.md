@@ -179,35 +179,6 @@ which is exactly how a hand-written poll loop passed a PR whose checks had not s
 (documented, unobserved here). Use the rollup to decide; use `gh pr checks` only for a readable
 dump when reporting.
 
-### 5d. Run the gates CI does not — locally, in the PR's worktree
-
-A green rollup only proves what the workflow ran. A repo may keep a gate out of CI on purpose
-because it is slow or has no business blocking every commit, and then the merge is the one
-moment it has to run. Read the target repo's `CLAUDE.md` for such a gate; do not infer one.
-
-On ztrange/veri it is `make docs-check` (thirty sandboxed builds of `docs/walkthrough.html`,
-removed from CI on 2026-09-11 because it made every job ~4× longer on a runner billed by the
-minute). Run it when the PR touches `docs/`, `skills/solve-issue/scripts/` or `Makefile`:
-
-```bash
-make docs-check          # in the PR's worktree, on the rebased tip
-```
-
-Two ways it goes red, with different fixes:
-
-- **The guards fail** — a real defect. Hand it back; do not merge.
-- **The page is stale** (`docs/walkthrough.html is stale — run make docs`, or `tags missing
-  from the capability index`) — mechanical. Regenerate, commit on the PR branch, push, and go
-  back to step 5 for the new head:
-
-```bash
-make docs && git add docs/walkthrough.html \
-  && git commit -m "docs: regenerate walkthrough (#<n>)" && git push
-```
-
-Never regenerate on `main` directly, and never fold the regen into a force-pushed rewrite of
-the reviewed commits — it is its own commit, so the page's history says when it caught up.
-
 ## 6. Merge
 
 ```bash
@@ -274,14 +245,6 @@ have shipped today:
 ```bash
 GIT_COMMITTER_DATE="$(git log -1 --format=%aI <sha>)" git tag -a v0.N <sha> -m "<capability>"
 ```
-
-### 6c. Regenerate what derives from the tag
-
-A tag is an input to any build that reads `git tag` — on ztrange/veri the walkthrough's
-capability index — and cutting one changes the built output without changing a file, so
-`make docs-check` on `main` is now red until someone regenerates. Do it now, as a PR, not as a
-push to `main`; the recipe is the repo's (veri: `CLAUDE.md`, "A regen commit built at the tag
-isn't the fixpoint"). Skip this in a repo whose docs do not derive from tags.
 
 ## 7. Leave the tree as you found it
 
