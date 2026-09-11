@@ -49,7 +49,7 @@ One fenced block, paste-ready, ~40 lines max:
 
 ## Constraints
 - <rule the user set, in their words>
-- <house rule that applies: branch→PR, never push to main, …>
+- <house rule that applies: branch→PR, never push to main, work only in the repo above, …>
 
 ## Already tried — don't redo
 - <approach> → <what happened, why it was dropped>

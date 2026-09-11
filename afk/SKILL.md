@@ -9,8 +9,9 @@ description: >-
   "sigue sin mí", "no me esperes", or otherwise hands over and leaves. Their absence is not
   authorization: irreversible actions still wait, and a decision that needed them gets parked
   rather than guessed. Merging is the one exception, and it is built in: saying "afk" is the
-  standing instruction to merge whatever the run finishes, through the `merge` skill, unless the
-  user says "don't merge" on the way out.
+  standing instruction to merge whatever the run finishes in the project repo, through the `merge`
+  skill, unless the user says "don't merge" on the way out. Other repos are out of scope entirely:
+  the run never starts work in one, and never merges there.
 ---
 
 # AFK — drive what can be driven, park what can't
@@ -32,6 +33,12 @@ Pushing branches and opening PRs is not in that set. Work that stays local is wo
 when they return, so **everything lands as a pushed branch with a PR** — merged if it is finished,
 draft if it is parked.
 
+**And the run stays inside the project repo.** An unattended agent that wanders into a second repo
+is making a scope decision nobody was there to approve. A fix that belongs elsewhere is parked as
+a line in the brief — repo, file, what the change would be — not gone and done. If they asked
+before leaving for a PR in another repo, it goes to branch → push → PR and stops there; the merge
+permission below does not reach it.
+
 ## Merging is included
 
 **Saying "afk" is the merge instruction for the run.** It is not inferred from their absence; it is
@@ -39,6 +46,9 @@ what this skill means, and what the `merge` skill's "only when the user says to"
 They do not have to add "merge it when green" — a finished thread is merged, not left as a draft
 for them to click through when they return. The whole point of the run is that they come back to
 work that has *landed*.
+
+It covers **PRs in the project repo only.** A PR in any other repo still needs them to say so for
+that PR — green, trivial and finished does not change it.
 
 What "finished" means does not loosen because nobody is watching:
 
@@ -152,6 +162,7 @@ Each of these produces a diff too large to review against a decision nobody was 
 - Renames across the codebase
 - Architecture changes, or refactors that alter behaviour
 - Anything that starts "while I was in there I also"
+- Anything in a repo other than the project one — including a change they'd obviously want
 
 A behaviour-preserving cleanup inside one module is fine. The test is whether a reviewer can check
 it without reconstructing your reasoning.

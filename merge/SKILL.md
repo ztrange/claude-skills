@@ -20,6 +20,12 @@ not an instruction. Saying it in advance counts, and so does "afk": that skill c
 merge permission for whatever the run finishes, so under it this step is already satisfied — every
 step after it still applies.
 
+**And only in the project repo.** "Merge it" is about a PR in the repo this session is working in.
+A PR in any other repo — one you opened there at their request, one you happened to find — is not
+covered by it, is not covered by `afk`, and does not merge until they say so about that PR. Check
+before step 1 that `gh pr view <n>`'s repo is the session's own; `gh` happily acts on a different
+one via `-R` or from a different directory.
+
 **`main` moving is the default case, not the exception.** Any repo with more than one agent or one
 human gains commits between opening a PR and landing it. Every step below assumes it happened and
 checks; none of them assume it did not.
