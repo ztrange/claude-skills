@@ -8,7 +8,7 @@ description: >-
   imminent and unfinished work would be lost. Emits a paste-ready block carrying the objective,
   observed state, the next concrete action, the dead ends worth not repeating, and the working
   mode — veri for development where the project already uses it, `/delegate` for the rest — so
-  the next session keeps its context small.
+  the next session keeps its context small from its first turn onwards.
 ---
 
 # Handoff — a prompt that survives /clear
