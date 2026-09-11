@@ -198,7 +198,11 @@ never wired up. A test nobody has watched fail is not known to test anything.
   `node_modules` installed, in a repo where nothing it was checking even changed. The glob is what
   keeps the hook honest about what the commit touched.
 - **Anything billable or deployed needs permission for that exact action.** Approved once is not
-  approved again.
+  approved again. **And the cost that gets missed is config-shaped**: a deploy looks billable, a
+  committed YAML line does not, yet it bills on every run forever. CI is `ubuntu-latest` — macOS
+  is ~10× the per-minute rate ($0.062 against $0.006) for the same green tick — every job carries
+  `timeout-minutes` so a hung one can't bill to the 6-hour ceiling, and a cron's frequency is a
+  cost decision, not a detail. Anything dearer than that is asked for first, with the number.
 - **A job that never runs looks exactly like one that does.** Surface freshness where someone will
   actually see it — the age of the newest backup point, the timestamp of the last sync — and treat
   unreadable, missing and empty as three distinct failures rather than one silence. Absence is the

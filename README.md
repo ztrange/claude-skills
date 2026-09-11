@@ -124,7 +124,8 @@ edits are live — there is no build or install step for day-to-day use.
 
 [`user-prompt/CLAUDE.md`](user-prompt/CLAUDE.md) is my global user prompt — the standing
 instructions Claude Code loads for *every* project on this machine (how to write, which repo work
-may touch, git and PR rules, verification standards, what to do when I push back). It is tracked here so changes to it
+may touch, what it may spend, git and PR rules, verification standards, what to do when I push
+back). It is tracked here so changes to it
 are reviewable and revertable like any other code.
 
 Install it the same way as a skill, by symlink:
