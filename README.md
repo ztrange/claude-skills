@@ -59,7 +59,8 @@ edits are live — there is no build or install step for day-to-day use.
 
 - **[`handoff`](handoff/SKILL.md)** — a paste-ready prompt that resumes the work in a fresh
   context (new session, or after `/clear`): objective, observed state, the next concrete action,
-  and the dead ends worth not repeating.
+  the dead ends worth not repeating, and the working mode — veri for development if the project
+  already uses it, `/delegate` for everything else, to keep the next context small.
 
 - **[`merge`](merge/SKILL.md)** — land a PR on a `main` that may have moved: detect it locally
   rather than trusting `mergeStateStatus`, rebase, force-push under a *pinned* lease (the bare one
