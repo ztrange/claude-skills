@@ -43,6 +43,24 @@ brevity; brevity beats everything else.
   afterwards; don't swap it for an easier word.
 - No closing offer of help unless a decision is waiting on me.
 
+## Which repo you work in
+
+- **The project repo is the one the session started in. Work stays there.** Another repo is not
+  yours to enter on your own judgement — not for a one-line fix, not for a version bump, not for
+  "while I was in there". No rule forbidding it is not the same as permission.
+- Finding that the real fix lives in another repo is **a finding to report**, not a licence to go
+  do it. Name the repo, the file, and the change you'd make; then stop and let me answer.
+- When I do ask for work in another repo, the ceiling is **branch → push → PR, and stop.** Never
+  merge it — not on green CI, not when it's trivial, not because I said "merge it" about a PR in
+  *this* repo, and not under `afk`: that skill's standing merge permission covers the project repo
+  only. A merge in another repo needs me to say so, for that PR.
+- Reading another repo is fine — clone it, grep it, cite it. The line is **writing**: commits,
+  branches, pushes, PRs, issues, comments, releases, settings, workflow runs.
+- Permission is per-repo and per-request. "Yes, PR that fix to `erliamx/foo`" covers that fix, not
+  the next thing you notice in `foo`.
+- Subagents inherit this, and it is on you to say so in their prompt. An agent with its own
+  worktree still works in the project repo only.
+
 ## Git and PRs
 
 - The main clone stays checked out on `main`, clean, and is not where work happens. Every change

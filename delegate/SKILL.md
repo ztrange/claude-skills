@@ -51,7 +51,9 @@ already tried. Every prompt carries five parts:
 2. **Context** — repo paths, the constraint the user stated, what's already been ruled out and why.
    Paste the specifics; don't refer to "the file we discussed".
 3. **Boundaries** — what it may change, what it must not touch, whether it may commit or push
-   (default: no).
+   (default: no), and **which repo it works in**. Name it explicitly: a blank subagent does not
+   know the scope rule you're under, and "fix this properly" reads to it as permission to go edit
+   whatever repo the cause turns out to live in.
 4. **Return contract** — the exact shape you want back, with a size cap.
 5. **Exclusions** — what *not* to return.
 
@@ -66,6 +68,7 @@ Context:
 
 Do: <steps or scope>
 Do not: <edit, commit, push, touch X>
+Do not touch any repo other than the one above — if the fix lives elsewhere, say so and stop.
 
 Return, under 20 lines:
 - verdict: <one line>
@@ -151,3 +154,4 @@ test Y", "give me the line number for that third claim". `ListAgents` shows who'
 | One agent per file across 20 files | One agent per question, across the files it needs |
 | Respawn for a follow-up question | `SendMessage` to the running agent |
 | Let a subagent commit, push, or open a PR | Keep outward-facing actions in the main thread |
+| Let a subagent decide to fix it in another repo | Name the one repo in **Boundaries**; a cross-repo cause comes back as a finding |
