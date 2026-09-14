@@ -3,14 +3,17 @@ name: merge
 description: >-
   Land a pull request safely: check `main` has not moved since the branch was cut, rebase onto it
   and force-push under a pinned lease if it has, read the CI result rather than trusting a tick —
-  or the absence of one — then rebase-merge, cut the capability tag in a repo that versions that
-  way, and clean up the branch, the primary clone and the worktree. Use when the user says "merge it", "land this", "merge the PR", "ship it", "mergea", or
-  "haz merge". Never merges without being told to. Treats the local `HEAD..origin/main` count as the
-  authority on whether `main` moved, pins the force-with-lease to a recorded sha because the bare
-  form silently clobbers, never lets an empty check rollup or an empty `conclusion` count as a pass,
-  and confirms from PR state because `gh`'s own exit code lies here. Tags only a repo that already
-  carries version tags, and reads the next number with git's version sort, since lexical sort makes
-  `v0.9` outrank `v0.10`.
+  or the absence of one — mark a draft PR ready and re-read the checks that readying can start,
+  then rebase-merge, cut the capability tag in a repo that versions that way, and clean up the
+  branch, the primary clone and the worktree. Use when the user says "merge it", "land this",
+  "merge the PR", "ship it", "mergea", or "haz merge". Never merges without being told to. Treats
+  the local `HEAD..origin/main` count as the authority on whether `main` moved, pins the
+  force-with-lease to a recorded sha because the bare form silently clobbers, never lets an empty
+  check rollup or an empty `conclusion` count as a pass, and confirms from PR state because `gh`'s
+  own exit code lies here: the branch delete, the tag and the worktree removal each run only
+  behind an explicit `state == MERGED` check, since deleting a PR's head branch closes the PR.
+  Tags only a repo that already carries version tags, and reads the next number with git's version
+  sort, since lexical sort makes `v0.9` outrank `v0.10`.
 ---
 
 # Merge — land it on a `main` that has not moved under you
@@ -203,9 +206,55 @@ repo's business and lives in the repo; this step only knows the name.
 
 ## 6. Merge
 
+**Every gate below is an `if … exit 1`, never a comment and never an `&&` chain.** Each code block
+runs as its own shell, so a gate only stops the block it lives in — which is why the destructive
+blocks in 6b, 6c, 7 and 8 each re-read state rather than trusting an earlier one. And `set -e` does
+not abort on a failure to the left of `&&`: that shape merged a PR on a red rollup in
+ztrange/veri#55. An `# expect MERGED` comment is not a gate either.
+
+### 6a. Ready a draft
+
+`gh pr merge` on a draft fails — silently, in some `gh` versions — and nothing earlier in this
+skill un-drafts it. Observed in ztrange/veri, whose `/tdd` conductor always opens drafts: every
+merge had to be told by hand to run `gh pr ready` first.
+
 ```bash
-gh pr merge <n> --rebase --match-head-commit "$(git rev-parse HEAD)"
+HEAD=$(git rev-parse HEAD)
+draft="$(gh pr view <n> --json isDraft -q .isDraft)"
+case "$draft" in
+  false) ;;
+  true)
+    before="$(gh run list --commit "$HEAD" --limit 100 --json databaseId -q length)"
+    gh pr ready <n>
+    draft="$(gh pr view <n> --json isDraft -q .isDraft)"
+    if [ "$draft" != "false" ]; then echo "PR <n> is still a draft (isDraft=$draft); not merging" >&2; exit 1; fi
+    sleep 30   # let ready_for_review workflows register
+    after="$(gh run list --commit "$HEAD" --limit 100 --json databaseId -q length)"
+    if [ "$after" != "$before" ]; then echo "readying started new runs ($before -> $after); back to 5c" >&2; exit 1; fi
+    ;;
+  *) echo "could not read isDraft (got '$draft'); not merging" >&2; exit 1 ;;
+esac
 ```
+
+Readying a draft fires `pull_request: ready_for_review` workflows, so a rollup that was green a
+minute ago may no longer be the whole story. A new run for the head sha sends you back to the 5c
+wait loop, then here again — where `isDraft` is now `false` and the block passes straight through.
+
+### 6b. Merge on a rollup read right now
+
+```bash
+HEAD=$(git rev-parse HEAD)
+R="$(gh pr view <n> --json statusCheckRollup --jq '<the 5a filter>')"
+T=$(jq -r .total <<<"$R"); P=$(jq -r '.pending|length' <<<"$R"); F=$(jq -r '.failed|length' <<<"$R")
+if [ "$F" != 0 ] || [ "$P" != 0 ]; then echo "rollup not green (failed=$F pending=$P); not merging" >&2; exit 1; fi
+if [ "$T" = 0 ] && [ "${NO_CI_CONCLUDED:-}" != 1 ]; then echo "empty rollup; back to 5b" >&2; exit 1; fi
+gh pr merge <n> --rebase --match-head-commit "$HEAD"
+```
+
+The rollup is re-read here, not carried over from 5c, because 5c's loop only `echo`es and `break`s
+— a loop that ran out, or broke on a failure, still falls through to whatever comes next. An
+unreadable rollup yields empty `F`/`P`, which is not `0`, so it fails closed. Set
+`NO_CI_CONCLUDED=1` only when 5b concluded "no CI" over its settle window, and say so in the report.
 
 `--match-head-commit` sends the API's `sha` guard, so a branch that moved between step 4 and here
 turns into a `409` instead of merging a tip you never reviewed.
@@ -215,14 +264,25 @@ Two things `gh` gets wrong in this layout, both expected:
 - **Omit `--delete-branch`.** Its local step runs `git checkout main`, which fails with
   `fatal: 'main' is already used by worktree at …` when the primary clone holds `main`.
 - **The exit code lies.** That local failure happens *after* the merge has landed. Never retry on
-  it. Confirm from state, then delete the remote branch directly:
+  it, and never trust it either way.
+
+### 6c. Delete the remote branch — only once state reads `MERGED`
+
+**Deleting a PR's head branch closes the PR.** So the delete is gated on state, not on
+`gh pr merge` having exited, and not on the step having been reached. A draft, a `409` from
+`--match-head-commit`, or a failed merge whose exit code was ignored all leave the PR `OPEN` — and
+an ungated delete then turns "not merged yet" into "closed". Observed in ztrange/veri: a chained
+delete closed a draft PR that never merged.
 
 ```bash
-gh pr view <n> --json state -q .state        # expect MERGED
+state="$(gh pr view <n> --json state -q .state)"
+if [ "$state" != "MERGED" ]; then echo "not merged (state=$state); branch kept" >&2; exit 1; fi
 git push origin --delete <branch>
 ```
 
-## 6b. Tag the capability, if this repo versions that way
+Not `MERGED` → stop and report the state. Do not delete, tag, or remove the worktree.
+
+## 7. Tag the capability, if this repo versions that way
 
 **Opt-in by existence.** Tag only a repo that already carries tags in this shape. A repo with no
 tags has not asked for versioning, and inventing one on its behalf is a decision that is not yours:
@@ -248,9 +308,15 @@ git fetch origin && git log --format='%h %s' ${LATEST}..origin/main
 A `fix:` that only repairs documentation is a documentation PR — the commit type describes the
 change, not the thing changed. This is the one judgement in the step.
 
-Then tag the merge result on `main` — not the branch tip, which no longer exists:
+Then tag the merge result on `main` — not the branch tip, which no longer exists. Gated on
+`MERGED` like the delete: an unmerged PR leaves `origin/main` without its commits, and the tag
+would name a capability on a commit that does not carry it.
 
 ```bash
+state="$(gh pr view <n> --json state -q .state)"
+if [ "$state" != "MERGED" ]; then echo "not merged (state=$state); no tag" >&2; exit 1; fi
+LATEST=$(git tag --sort=-v:refname | head -1)
+if [ -z "$LATEST" ]; then echo "no version tags; this repo does not version" >&2; exit 1; fi
 NEXT="v0.$(( ${LATEST#v0.} + 1 ))"
 git tag -a "$NEXT" origin/main -m "<the capability, in the issue's own words>"
 git push origin "$NEXT"
@@ -268,12 +334,19 @@ have shipped today:
 GIT_COMMITTER_DATE="$(git log -1 --format=%aI <sha>)" git tag -a v0.N <sha> -m "<capability>"
 ```
 
-## 7. Leave the tree as you found it
+## 8. Leave the tree as you found it
 
 ```bash
 git -C <primary-clone> pull --ff-only        # the primary is the only place main advances
-git worktree remove <path>                   # once nothing is uncommitted
+state="$(gh pr view <n> --json state -q .state)"
+if [ "$state" != "MERGED" ]; then echo "not merged (state=$state); worktree kept" >&2; exit 1; fi
+git worktree remove <path>
 ```
+
+The worktree is the last copy of an unmerged branch once 6c has been skipped, so it gets the same
+`MERGED` gate. `git worktree remove` refuses a dirty tree on its own — never add `--force` to get
+past that. This skill does not delete the local branch; that is `housekeeping`'s job, which
+decides from PR state too.
 
 Report the merge commit sha **and the tag**, and say explicitly if anything was skipped — an
 unresolved conflict handed back, a check that was pending, a branch left in place, a tag not cut
@@ -291,3 +364,7 @@ because the PR carried no capability.
   no live legacy status context has been seen through it. Only the `CheckRun` half is observed
   (ps-mutuus/mutuus-changelog#52, and a 37-row live rollup on cli/cli#14334). If a repo's CI posts
   commit statuses rather than check runs, read the raw rows once before trusting the summary.
+- The 6a "did readying start new checks?" test counts GitHub Actions runs for the head sha, so a
+  `ready_for_review` trigger on an external provider that posts commit statuses is invisible to it,
+  and 30s is a settle window, not a guarantee. 6b's rollup re-read still refuses anything that has
+  registered as pending by then. Tested against a stubbed `gh`, not a live draft PR.
