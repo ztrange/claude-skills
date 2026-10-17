@@ -7,7 +7,10 @@ description: >-
   this in a new session", "pick this up tomorrow", "context is getting full", "pásame el prompt para
   continuar", or when a compaction is imminent and unfinished work would be lost. Carries the
   objective, observed state, the next concrete action, the dead ends worth not repeating, and the
-  working mode — veri for development where the project already uses it, `/delegate` for the rest.
+  working mode — veri for development where the project already uses it, `/delegate` for the rest. A
+  handoff for this same session after a `/clear` also records the session's name and id so the
+  resuming agent can check the paste landed in the right session; one written for a different
+  session deliberately carries no such check.
 ---
 
 # Handoff — a file that survives /clear
@@ -16,7 +19,7 @@ Written **for the next agent, not the user**: second person, imperative, no refe
 conversation". A line that only parses for someone who read this session is broken. (`/sitrep` tells
 the user where things stand; this hands an agent enough to work without a catch-up question.)
 
-**Short.** 25 lines in the file is the target, 40 the hard cap. Cut every line that does not change
+**Short.** 25 lines in the file is the target, 40 the hard cap, not counting the session check. Cut every line that does not change
 the next action — the handoff exists to save context, not to relocate it. Drop an empty section
 rather than padding it.
 
@@ -41,6 +44,39 @@ directory.
 - Asked for it inline ("just print it", "paste it here") → print the block in chat instead of, not
   as well as, the file.
 - Re-generate rather than edit a stale file. A handoff is a snapshot.
+
+## Which handoff is this — and only one kind gets an identity check
+
+| They said | Kind | Identity block |
+|---|---|---|
+| "I'm going to clear the context", "context is getting full", a compaction is imminent | **Same session, cleared** — it comes back to *this* process | **Yes** |
+| "pick this up tomorrow", "continue this in a new session", "another machine", "send this to another session" | **Portable** — meant for a different session | **No** |
+
+Neither fits → ask, in one line. The two files differ, and a wrong guess either blocks the session
+that was supposed to pick it up or drops the check that stops a paste landing in the wrong tree.
+
+**Same-session handoffs open with a session check, before `## Objective`.** `/clear` keeps the same
+process, so the session's own name and id survive it — which makes them the one thing a resuming
+agent can check to know the paste landed where it was meant to. Read them as you write:
+
+```
+get_session with session_id: "self"   → .title (what /name sets) and .sessionId
+```
+
+Then put this at the top of the file, filled in:
+
+```markdown
+## Session check — do this first
+This handoff belongs to the session named "<title>" (`<sessionId>`), worktree <abs path>.
+Verify with `get_session` on `"self"` and compare the name; if the name was changed since, compare
+`sessionId`, which does not change. No session tooling available → compare the worktree path from
+`git rev-parse --show-toplevel`.
+Doesn't match → stop. Say which session this handoff is for and do nothing else.
+```
+
+**Portable handoffs carry no such block**, and the omission is deliberate: an identity gate there
+would refuse exactly the session it was written for. They are still pinned to a tree by `## State`'s
+repo, branch and worktree path, which a reader can sanity-check without being blocked by it.
 
 ## The file
 
