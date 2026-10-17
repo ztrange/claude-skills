@@ -23,14 +23,18 @@ rather than padding it.
 ## Delivery — a file plus one line
 
 Write the markdown to the scratchpad directory as `handoff-<slug>-<YYYYMMDD>.md`, then reply with
-exactly one line:
+exactly one line, **always inside a fenced code block** so it is one click to copy:
 
+````
 ```
 Read this handoff prompt and resume the session: /abs/path/to/handoff-<slug>-<date>.md
 ```
+````
 
-Nothing else — no preamble, no summary of the file, no pasted copy of it. Absolute path always; the
-next session may start in a different directory.
+The fence is not decoration — that line exists to be copied into the next session, and prose around
+it or beside it makes it a selection job. Nothing else in the reply: no preamble, no summary of the
+file, no pasted copy of it. Absolute path always; the next session may start in a different
+directory.
 
 - Needs to outlive this machine's temp cleanup (another machine, next week) → write it under the
   user's home or the repo instead, and say which.
