@@ -22,14 +22,12 @@ edits are live — there is no build or install step for day-to-day use.
   text that already exists and adds nothing to it — unlike `sitrep`, which goes and observes the
   tree.
 
-- **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me from
-  zero. Mechanism before failure, every name carrying the clause that resolves it, and what was
-  already ruled out. The sections follow what I pointed at: a whole decision gets the dead ends and
-  the options with a recommendation; a single option gets what it actually does and what it costs
-  against the others; a finding I couldn't parse gets how it's known and what it means, and no
-  invented question if there was never a decision in it. The opposite move to `tldr` — it expands,
-  because the problem there is missing context, not volume.
-
+- **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me —
+  but only the issue, not the project. It assumes I know the product and spends its half-screen on
+  the mechanism, what goes wrong, what was already ruled out, and the choice with a recommendation.
+  The sections follow what I pointed at: a whole decision, a single option, or a finding I couldn't
+  parse. It ends by offering to go deeper, so the short version is the default and the long one is
+  something I ask for.
 - **[`afk`](afk/SKILL.md)** — I'm away; drive it. Every thread that doesn't need me gets finished
   and pushed as its own draft PR; every thread that does gets *parked* rather than guessed, with
   the question and a recommendation in the PR body where it survives the session. When everything
@@ -57,11 +55,11 @@ edits are live — there is no build or install step for day-to-day use.
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
 
-- **[`handoff`](handoff/SKILL.md)** — a paste-ready prompt that resumes the work in a fresh
-  context (new session, or after `/clear`): objective, observed state, the next concrete action,
-  the dead ends worth not repeating, and the working mode — veri for development if the project
-  already uses it, `/delegate` for everything else, to keep the next context small.
-
+- **[`handoff`](handoff/SKILL.md)** — a prompt that resumes the work in a fresh context (new
+  session, or after `/clear`): objective, observed state, the next concrete action, the dead ends
+  worth not repeating, and the working mode — veri for development if the project already uses it,
+  `/delegate` for everything else, to keep the next context small. It lands as a markdown file and
+  hands back one line pointing at it, so resuming is a paste of the path rather than of the prompt.
 - **[`merge`](merge/SKILL.md)** — land a PR on a `main` that may have moved: detect it locally
   rather than trusting `mergeStateStatus`, rebase, force-push under a *pinned* lease (the bare one
   silently clobbers after any fetch), read the CI result instead of the tick — *and* instead of the

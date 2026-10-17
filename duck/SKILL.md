@@ -1,188 +1,139 @@
 ---
 name: duck
 description: >-
-  Re-explain whatever is on the table from zero, to the user, as if they had just walked in — a
-  decision they're being asked to make, one of the options being offered, or something just
-  reported. The mechanism before the failure, every name resolved, what was already ruled out, and
-  the ask stated so it can actually be answered. Use when the user says "duck", "duck it", "duck
-  this", "talk to the duck", "explain it to the duck", "I don't follow", "I don't understand what
-  you're asking me", "explain that from scratch", "assume I know nothing about this", "what do you
-  mean by that option", "explain that second one", "what did you just find", "what does that error
-  actually mean", "start over, I just walked in", "explícamelo desde cero", "no entiendo qué me
-  estás pidiendo", or when an answer comes back that resolves a different question than the one
-  asked. Expands rather than compresses — the opposite of /tldr.
+  Explain just the issue on the table, briefly, so the user can make an informed choice — the
+  mechanism, what goes wrong, what was ruled out, and the ask stated so it can be answered. Assumes
+  they know the product; explains the problem, not the project. Use when the user says "duck", "duck
+  it", "duck this", "talk to the duck", "explain it to the duck", "I don't follow", "I don't
+  understand what you're asking me", "explain that from scratch", "what do you mean by that option",
+  "explain that second one", "what did you just find", "what does that error actually mean",
+  "explícamelo desde cero", "no entiendo qué me estás pidiendo", or when an answer comes back that
+  resolves a different question than the one asked. Ends by offering more detail on request.
 ---
 
-# Duck — explain it to whoever just walked in
+# Duck — explain the issue, not the project
 
-In the story you explain the problem to a rubber duck and solve it yourself. Here the duck is the
-user, and the duck answers back — but only if the explanation is complete enough to be advised on.
-This skill is that explanation.
+The user is the duck, and the duck answers back — but only if the explanation is complete enough to
+be advised on.
 
-The failure it fixes: forty tool calls deep, everything has a name — a file, a branch, a helper, a
-workaround someone put in eight months ago. The question that comes out ("keep the fallback in
-`resolveBinding` or hoist it to the caller?") is answerable only from inside that context. The user
-has been doing something else. So they answer the question they think was asked, or they tell you to
+The failure it fixes: forty tool calls deep, everything has a name, and the question that comes out
+("keep the fallback in `resolveBinding` or hoist it to the caller?") is answerable only from inside
+that context. They have been doing something else, so they answer a different question or tell you to
 just decide — and a decision that needed them got made without them.
 
-| | Written for | Direction |
+## Two rules above the rest
+
+**They know the product.** What it is for, who uses it, what the repo is — all assumed. Explain the
+*issue*: the mechanism around it, what breaks, what the choice costs. One short clause placing it in
+the system is fine when the area is genuinely obscure; a paragraph introducing the project is not.
+
+**Be brief.** Half a screen, ~15 lines. The whole explanation is the minimum that makes the choice
+informed, and the user pulls more if they want it:
+
+> Say the word and I'll go deeper on any of this.
+
+That line closes every duck. Asked for more → expand *that* part only, same rules, still short.
+
+## What is being ducked
+
+| Ducked | They're asking for | Shape |
 |---|---|---|
-| `/tldr` | the user, who already read it | shorter |
-| `/sitrep` | the user, who is already in it | status, observed |
-| `/handoff` | the next agent | portable |
-| **`/duck`** | **the user, cold** | **longer, complete** |
+| **A decision** — "what are you asking me?" | the choice, enough to answer | decision |
+| **An option** — "what does that one mean?" | one branch opened | option |
+| **A finding** — "what did you just tell me?" | a report they can't parse | finding |
 
-## First, what is being ducked
+A section with nothing real behind it gets cut, not filled — a padded **Ruled out** on something found
+on the first read, or a manufactured question on something that was never a decision, is how this goes
+wrong.
 
-Three different things get ducked, and they do not want the same sections. Read what the user
-pointed at, not the habit:
-
-| Ducked | What they're actually asking | Sections |
-|---|---|---|
-| **A decision** — "what are you asking me?" | the whole choice, from zero | full shape |
-| **An option** — "what does that one mean?" | one branch expanded | option shape |
-| **A finding** — "what did you just tell me?" | a report they can't parse | finding shape |
-
-Two parts never vary: **What this is about**, and the rules further down. Everything else is
-chosen. A section with nothing real behind it gets cut, not filled — a padded **What I've tried**
-on something you found on the first read, or a manufactured question on something that was never a
-decision, is how this goes wrong.
-
-Whichever shape: one screen. No preamble, no "let me back up a bit", no apology for the length.
-
-### Ducking a decision
+### Decision
 
 ```
-**What this is about**
-<2–4 sentences: what the thing is, what it's for, why we're touching it at all>
+**The issue**
+<mechanism in a clause, then what it does instead — 2–3 sentences>
 
-**What I've tried**
-- <attempt — what happened>                        (max 4; include what was ruled out and why)
+**Ruled out**
+- <attempt — what happened>                        (max 3; only real ones)
 
-**Where it's stuck**
-<mechanism first — what it's supposed to do — then what it does instead>
-
-**What I need from you**
-<the choice, as options, each with what it costs>
+**The choice**
+<the options, each with what it costs — one line each>
 Recommend: <option>, because <half a line>
 ```
 
-### Ducking an option
+### Option
 
-They already have the decision; they want one branch of it opened up. Don't re-litigate the
-decision, and don't re-explain the options they didn't ask about beyond how they differ.
+They have the decision and want one branch opened. Don't re-litigate it; cover the others only in how
+they differ.
 
 ```
-**What this is about**
-<2–3 sentences: the decision this option belongs to, and what turns on it>
-
-**What this option actually does**
-<mechanism: the change it makes, where, in what order — concrete, `file:line`>
+**What this option does**
+<the change it makes, where, in what order — concrete, `file:line`>
 
 **What it costs**
-<what it gives up, what it commits us to later, what it makes harder>
+<what it gives up, what it commits us to, what it makes harder>
 
 **Against the others**
 - <other option — the one line where it differs>
 ```
 
-Close with the decision restated in a line — it is still live and still theirs. **What I've tried**
-earns a place here only when an attempt is *why* this option exists ("the direct call was the
-obvious one; it deadlocks, so this is the fallback").
+Close by restating the decision in a line; it is still live and still theirs.
 
-### Ducking a finding
+### Finding
 
-Something was reported — a bug, a risk, a review comment, a surprising log line — and the report
-was unreadable. There may be no decision attached at all.
+Something was reported and the report was unreadable. There may be no decision attached.
 
 ```
-**What this is about**
-<2–3 sentences: the thing, what it's for, why it was being looked at>
-
-**What it's supposed to do**
-<the mechanism, one or two sentences>
-
-**What it does instead**
-<the failure — the one excerpt goes here, if the exact wording is the point>
+**What's wrong**
+<what it should do, then what it does instead>
 
 **How I know**
 <what was observed — command, `file:line`, log — and what is inference>
 
 **What it means**
-<who hits it, when, how bad, and whether anything is broken right now>
+<who hits it, when, how bad, whether anything is broken right now>
 ```
 
-Then one of two endings, never both and never neither: **What I need from you** if a real choice
-falls out of it, or a single line of what happens next if it doesn't. Do not invent a question to
-fill the slot.
+Then exactly one ending: **The choice** if a real one falls out, or a single line of what happens
+next. Never both, never neither, never an invented question.
 
-## Rules that make it land
+## Rules
 
-- **Assume zero prior context.** No "as I mentioned", no "the file we were looking at", no "the
-  same issue as before". The test: could a colleague who sat down thirty seconds ago read it top
-  to bottom without scrolling up? If a sentence needs the conversation to parse, rewrite it.
+- **Every name resolves** — `#412`, `verifyToken`, `--ff-only`, the branch, the error string — in a
+  clause, not a sentence. Unresolved names are where the misunderstanding was living.
+- **Mechanism before failure.** A bug described before its mechanism is noise.
+- **A term of art keeps its name and gets a gloss anchored to this task** — "*idempotent* — running
+  the import twice leaves the same rows". They need that term to answer you.
+- **Observe, don't recall.** Re-read the file, re-run the command, re-check the PR. Explaining from
+  memory reproduces the context that already lost them, and may brief them on a moved tree.
+- **Mark the guesses.** Verified and inferred, separated.
+- **Say what you ruled out, and why**, one line each — else the first suggestion back is the dead end
+  you already walked.
+- **A live ask has to be answerable**: options, costs, a recommendation. "What do you think?" is not
+  one. If the answer wouldn't change what you do next it isn't a decision — say what happens next
+  instead. That exemption is for something never a decision, not for one you answered yourself.
+- **At most one excerpt**, and only when the exact wording is what's being decided.
+- **Scope is what they pointed at.** Past half a screen you've started giving a codebase tour.
 
-- **Translate the sentence, not the vocabulary.** A term of art keeps its name and gets a short
-  gloss anchored to *this* task — "*idempotent* — running the import twice leaves the same rows".
-  Don't swap it for an easier word: the user needs that term to answer you, and to ask the next
-  question. Simplifying the words while keeping the density fixes nothing.
+## When explaining solves it
 
-- **Every name resolves.** `#412`, `verifyToken`, `--ff-only`, the branch, the error string — each
-  arrives with the clause that says what it is. Unresolved names are where the misunderstanding
-  was living in the first place.
+The answer sometimes falls out while writing. That changes what goes under **The choice**; it does not
+delete the section and it does not start the work.
 
-- **Mechanism before failure.** One sentence on what the code is supposed to do, then what it does
-  instead. A bug described before its mechanism is noise.
+- **Still stop, still ask**, even when it looks obvious. Finding it while explaining doesn't make the
+  decision yours — the reason you were writing is that it wasn't.
+- **It's a proposal, not a finding** — reasoning, not something you ran. Don't go verify it first;
+  that is doing the work before the decision.
+- **Keep the alternatives on the page.**
 
-- **Observe, don't recall.** Re-read the file, re-run the command, re-check the PR before
-  describing them. Explaining from memory reproduces the same context that already lost the user,
-  with the wrong parts intact — and risks briefing them on a tree that has moved.
-
-- **Mark the guesses.** Separate what you verified from what you're inferring. Advice is only as
-  good as knowing which is which, and this is exactly where a confident sentence does damage.
-
-- **Say what you ruled out, and why.** One line each. Skip it and the first suggestion back is the
-  dead end you already walked.
-
-- **A live ask has to be answerable.** Options, costs, a recommendation. "What do you think?" is
-  not a question. If the answer wouldn't change what you do next, it isn't a decision — say what
-  happens next instead of asking. That exemption is for something that was never a decision, not
-  for one you answered yourself on the way here: a decision that was live before the duck is still
-  live after it.
-
-- **At most one excerpt.** A trimmed error, a few lines of the file — and only when the exact
-  wording is the thing being decided. Otherwise point: `file:line`.
-
-- **Scope is what they pointed at.** The decision, the one option, the one finding — not the
-  project. If it doesn't fit a screen you've started giving a tour of the codebase.
-
-## When explaining it solves it
-
-Sometimes the answer falls out while you're writing — that is the story working. It changes what
-goes under **What I need from you**. It does not delete that section, and it does not start the
-work.
-
-- **Still stop, and still ask.** Even when the answer looks obvious. Finding it while explaining
-  doesn't convert the decision into yours — the whole reason you were writing is that this one
-  wasn't. Acting on it puts the user back where `/duck` was invoked to get them out of: told
-  afterwards.
-- **Say where it came from.** Don't present a conclusion reached three paragraphs ago as if it had
-  been the plan all along.
-- **It's a proposal, not a finding.** It came out of re-reading and reasoning, not out of running
-  anything. Say which parts you actually checked and which you didn't, and don't go verify it
-  first — that's doing the work before the decision.
-- **Keep the alternatives on the page.** The options you were about to lay out are still the
-  options. An answer you like doesn't get to be the only one offered.
-
-> Writing this out surfaced `<what>`, which points at `<the answer>`. That's reasoning — I haven't
-> run anything against it. Options are still `<a>` and `<b>`; recommend `<the answer>`, because
-> `<half a line>`. Your call.
+> Writing this out surfaced `<what>`, which points at `<the answer>`. That's reasoning — I haven't run
+> anything against it. Options are still `<a>` and `<b>`; recommend `<the answer>`, because `<half a
+> line>`. Your call.
 
 ## Follow-ups
 
-- **"Still lost" / "duck it again"** — start one level further out, don't repeat the same words
-  louder. Find the assumption the first version leaned on without stating, and begin there.
-- **"That's not what I asked"** — they were pointing at one option or one finding and got the whole
-  decision. Re-duck at that scope, in that shape.
-- **Answered with a decision** — act on it. No re-briefing, no confirming it back.
-- **"Duck the caching part"** — scope to that piece, same rules, shorter.
+- **"Still lost" / "duck it again"** → find the assumption the first version leaned on without stating
+  and start there. Not the same words louder, and not longer by default.
+- **"More detail on X"** → that part only.
+- **"That's not what I asked"** → they pointed at one option or finding and got the whole decision.
+  Re-duck at that scope, in that shape.
+- **Answered with a decision** → act on it. No re-briefing.
