@@ -24,7 +24,7 @@ description: >-
 Drop an empty section. Nothing blocked → **Needs you** reads exactly `Nothing blocked.`
 
 - **Observe, don't recall.** `git status`, `git log`, open PRs and their CI, last test run — before
-  writing. A summary from memory drifts from the tree.
+  writing.
 - **Done means verified.** Written-but-unrun, unpushed or untested goes to **Remaining** with the
   reason inline: "auth refactor — written, tests not run".
 - **Name the gaps**: what you skipped, what failed, what you could not verify.

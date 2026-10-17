@@ -11,12 +11,12 @@ description: >-
 
 # TL;DR — the wall of text, minus the wall
 
-Re-read what is already on screen and emit the short version. **No new tool calls, no new work, no
-new claims.** Needs fresh state → that is `/sitrep`, which observes the tree; this compresses text.
+Re-read what is on screen and emit the short version. **No new tool calls, no new work, no new
+claims.** Needs fresh state → `/sitrep`; this compresses text.
 
-Target: the assistant's most recent long output, or the last few if they piled up. If the user names
-one ("tldr that review", "tldr the subagent's report", "tldr this file"), compress that — reading a
-named file or PR is fetching the source, not new work.
+Target: the most recent long output, or the last few if they piled up. If the user names one ("tldr
+that review", "tldr the subagent's report", "tldr this file"), compress that — reading a named file
+or PR is fetching the source, not new work.
 
 ```
 <one sentence: the bottom line — what happened, or the answer>
@@ -43,20 +43,19 @@ Test per line: **would the user do something different if it were missing?** No 
 | The trade-off behind a recommendation | Hedges, praise, closing offers |
 
 **Cut narration, never nouns.** Not "found several issues in the auth code" but "3 failing cases in
-`verifyToken` — expired, wrong `aud`, `alg: none`". Every name carries the clause that resolves it.
+`verifyToken` — expired, wrong `aud`, `alg: none`".
 
 ## Honesty
 
-- **Faithful, not flattering.** Failed stays failed; uncertain stays uncertain.
 - **A buried caveat is the highest-value line** — "couldn't verify X" from paragraph six gets
   promoted, not dropped.
-- **Never summarize away a question.** It survives in **Needs you**, with a recommendation.
-- **No new claims.** If compressing surfaces a mistake in the source, flag it as a correction in one
-  line; don't silently patch it.
-- A recommendation keeps its half-line of why.
+- **Never summarize away a question.** It survives in **Needs you**, with a recommendation, which
+  keeps its half-line of why.
+- **No new claims.** A mistake in the source gets flagged as a correction in one line, never silently
+  patched.
 
 ## Follow-ups
 
 - "Expand on 2" → that bullet only, no re-emitting the wall.
-- `/tldr` twice → only what is new since the last one.
-- Source was already short → say so in one line rather than inflating it.
+- `/tldr` twice → only what's new since the last.
+- Source already short → say so instead of inflating it.
