@@ -2,93 +2,81 @@
 name: wrap-up
 description: >-
   Close out a finished piece of work — land the change, clean the scratch files, remove the git
-  worktree, and archive the session. Use when the user says "wrap up", "clean up", "we're done
-  here", "close this out", "tidy up and archive", "remove the worktree", "archive this session",
-  or "limpia y archiva". Fails closed on anything unmerged, unpushed, or uncommitted: it verifies
-  from PR state and the actual tree before deleting, and archiving is always the last step.
+  worktree, archive the session. Use when the user says "wrap up", "clean up", "we're done here",
+  "close this out", "tidy up and archive", "remove the worktree", "archive this session", or "limpia
+  y archiva". Fails closed on anything unmerged, unpushed or uncommitted: it verifies from PR state
+  and the actual tree before deleting, and archiving is always the last step.
 ---
 
 # Wrap-up — land it, clean it, archive it
 
-Runs in order. **Each step gates the next** — a failure stops the sequence and gets reported, it
-never gets skipped past. Nothing here deletes work that isn't provably somewhere else.
+In order. **Each step gates the next** — a failure stops the sequence and gets reported, never
+skipped past. Nothing here deletes work that isn't provably somewhere else.
 
 ## 1. Take stock
 
-Run `/sitrep`. If anything is still in **Remaining** or **Needs you**, stop and show it — closing
-out unfinished work is the user's call, not yours.
+Run `/sitrep`. Anything still in **Remaining** or **Needs you** → stop and show it.
 
-That rule is for open questions the user's actual work left behind, not ones this wrap-up run
-invents about its own mechanics. "Confirm removing the worktree" is not a real **Needs you** —
-whether the worktree holds unique work is a fact steps 2–4 establish, not a question to bounce
-back. Don't let the sitrep manufacture a question that the rest of this skill answers.
+That means open questions the *user's work* left behind, not ones this run invents about its own
+mechanics. "Confirm removing the worktree" is not a **Needs you** — whether the worktree holds
+unique work is a fact steps 2–4 establish.
 
-## 2. Land the change
+## 2. Land
 
-- Uncommitted changes → commit on the branch (never on `main`), message carrying the why.
-- No PR yet → push and open one. Merge only if the user has said to merge.
-- CI still running → say so and stop. Don't clean up behind a red or pending build.
+- Uncommitted → commit on the branch, message carrying the why.
+- No PR → push and open one. Merge only if the user said to.
+- CI running or red → say so and stop.
 
-## 3. Clean the tree
+## 3. Clean
 
 Delete what was never meant to ship: scratch files, throwaway harnesses, generated bundles, temp
-branches, debug logs. `git status --short` must come back clean, and the ignored-file sweep
-(`git status --short --ignored`) shouldn't show leftovers you created.
+branches, debug logs. `git status --short` clean, and `git status --short --ignored` free of
+leftovers you created.
 
 ## 4. Remove the worktree — fail closed
 
-Verify **all** of these from observed state before removing anything:
+All four, from observed state, before removing anything:
 
 | Check | How | If it fails |
 |---|---|---|
-| Work is merged, **or** never existed | `gh pr view <n> --json state` says `MERGED`; **or**, if there's no PR and no upstream, `git log main..HEAD --oneline` is empty | Stop. `git branch --merged` lies under squash merges — never decide from it |
-| Nothing uncommitted | `git status --short` empty | Stop and show the files |
-| Nothing unpushed | `git log @{u}.. --oneline` empty | Stop and show the commits |
+| Merged, **or** never diverged | `gh pr view <n> --json state` is `MERGED`; **or** no PR, no upstream, and `git log main..HEAD --oneline` empty | Stop. Never decide from `git branch --merged` |
+| Nothing uncommitted | `git status --short` empty | Stop, show the files |
+| Nothing unpushed | `git log @{u}.. --oneline` empty | Stop, show the commits |
 | Not in use elsewhere | `git worktree list`, open PRs | Never touch a worktree another session holds or that has an open PR |
 
-The "never existed" branch is for a worktree that never diverged from `main` at all — no PR, no
-upstream, zero commits ahead. That's not a smaller version of "merged"; it's proof there was never
-anything to merge, established the same way every other row here is: by checking, not by asking.
-The other three rows still apply in full — a worktree with nothing ahead of `main` can still have
-uncommitted changes sitting in it, and those still stop the sequence.
+"Never diverged" is proof there was nothing to merge, not a weaker form of merged — and the other
+three rows still apply in full.
 
-Then remove it:
+Then:
 
-- `ExitWorktree` only handles a worktree **this session** created with `EnterWorktree`. Anywhere
-  else it's a no-op — use `git worktree remove <path>` from the main clone instead.
-- `gh pr merge --delete-branch` fails its local cleanup when `main` is checked out in another
-  worktree (`fatal: 'main' is already used by worktree at …`). The server-side merge still went
-  through — check the PR state, then delete the remote branch with
-  `git push origin --delete <branch>`. The local branch survives while its worktree is on it and
-  goes away with the worktree.
-- Removal failed? Say so with the error. Never fall back to `rm -rf` on a worktree — that leaves
-  a stale registration in `.git/worktrees`.
+- `ExitWorktree` only handles a worktree **this session** created with `EnterWorktree`; elsewhere it
+  is a no-op, so use `git worktree remove <path>` from the main clone.
+- `gh pr merge --delete-branch` fails its local step when the primary clone holds `main`
+  (`fatal: 'main' is already used by worktree at …`). The server-side merge still landed — check PR
+  state, then `git push origin --delete <branch>`. The local branch goes with the worktree.
+- Removal failed → report the error. Never `rm -rf` a worktree: it leaves a stale registration in
+  `.git/worktrees`.
 
-**Never infer what's safe to delete from age, ordering, or a name that looks temporary.** Each
-deletion needs a fact behind it. If a sweep would remove everything it looked at, that's a bug —
-stop.
+**Never infer what's safe to delete from age, ordering, or a name that looks temporary.** A sweep
+that would remove everything it looked at is a bug — stop.
 
-## 5. Archive the session — last, and without asking again
+## 5. Archive — last, and without asking again
 
-`archive_session` with `session_id: "self"` **ends this conversation** — it stops the session's own
-process, not any work of the user's, and cleans up the session's worktree by default. Archived
-sessions reopen from the Archived list, so it is not a delete. So:
+`archive_session` with `session_id: "self"` ends this conversation and cleans up the session's
+worktree by default. It is reversible: archived sessions reopen from the Archived list.
 
-- It goes last. Anything after it doesn't run — send the report below *before* the call, not after.
-- **Don't ask for permission.** Invoking `/wrap-up` is the agreement: archiving is in this skill's
-  own description, and steps 2–4 are what make it safe. `archive_session` always prompts on its
-  own, and that prompt is where a change of mind belongs. Asking as well turns one confirmation
-  into two and invites the user to talk themselves out of what they just asked for.
-- **Don't risk-manage it.** No warning about what archiving costs, no "keep it open" offered as
-  the safer choice, and never an unqualified "stops the process" — by step 5 there is deliberately
-  nothing running, so that phrasing reads as though a build, server or job of the user's is about
-  to be killed. Archiving is reversible: the session reopens from the Archived list. If anything
-  genuinely were at risk, steps 2–4 would have stopped the sequence before reaching here.
-- Never archive over unmerged, unpushed, or uncommitted work — steps 2–4 must have passed.
-- If the user does this after every merged PR, mention the "Auto-archive on PR close" preference
-  in Settings once, then stop suggesting it.
+- **Goes last.** Nothing after it runs — send the report *before* the call.
+- **Don't ask.** Invoking `/wrap-up` is the agreement, steps 2–4 are what make it safe, and
+  `archive_session` prompts on its own. A second ask invites the user to talk themselves out of what
+  they just requested.
+- **Don't risk-manage it.** No warning about what archiving costs, no "keep it open" as the safer
+  choice, and never an unqualified "stops the process" — by step 5 nothing is running, so that
+  phrasing reads as though a build or job is about to be killed.
+- Never archive over unmerged, unpushed or uncommitted work.
+- If the user does this after every merged PR, mention the "Auto-archive on PR close" preference in
+  Settings once, then stop.
 
 ## Report
 
-Close with what landed (PR url, merge sha), what was deleted (worktree path, branches, scratch
-files), and anything you left alone and why. Loud about failures, silent about nothing.
+What landed (PR url, merge sha), what was deleted (worktree path, branches, scratch files), and what
+you left alone and why. Loud about failures.
