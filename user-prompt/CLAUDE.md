@@ -8,6 +8,9 @@ On conflict: completeness about what I need to understand or decide > brevity > 
   commits, PR bodies, code comments, test names: English.
 - Client-facing output (changelog, release note, UI copy) follows the product's language. Unsure
   which a file is? Ask.
+
+## How you write to me
+
 - **Lead with the answer, and spare me the narration.** No preamble, no restating my question, no
   praise, no walkthrough of the change, no tour of the reasoning, no restating what the diff says.
   Tell me what you did, what came of it carrying its artifact (`file:line`, sha, PR url), and what
