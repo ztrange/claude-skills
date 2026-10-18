@@ -14,13 +14,9 @@ edits are live — there is no build or install step for day-to-day use.
   contract, parallel fan-out and worktree isolation, and how the orchestrator verifies and relays
   results without re-reading everything.
 
-- **[`sitrep`](sitrep/SKILL.md)** — succinct state of the work: what's done, what remains, what
-  needs your decision. Three capped sections, grounded in git/PR/CI state rather than recollection.
-
 - **[`tldr`](tldr/SKILL.md)** — the wall of text minus the wall: bottom line, the few facts that
   change what you do next, the caveat buried in paragraph six, the pending decision. Compresses
-  text that already exists and adds nothing to it — unlike `sitrep`, which goes and observes the
-  tree.
+  text that already exists and adds nothing to it — it never goes and observes the tree.
 
 - **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me —
   but only the issue, not the project. It assumes I know the product and spends its half-screen on
@@ -123,6 +119,11 @@ edits are live — there is no build or install step for day-to-day use.
   repo — a tracked `.claude/skills/ja-changelog -> ../../skill` symlink — so it is no longer linked
   into `~/.claude/skills/` at all. A frozen snapshot is kept in [`deprecated/`](deprecated/) for
   history; don't edit that copy.
+
+- **`sitrep`** — folded into [`wrap-up`](wrap-up/SKILL.md) (2026-10-18), which now observes the tree
+  itself and closes with a very succinct report. The global prompt no longer mandates a report
+  format at all; a project that wants one defines its own sections. Frozen snapshot in
+  [`deprecated/`](deprecated/).
 
 ## User prompt
 

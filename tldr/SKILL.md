@@ -12,7 +12,7 @@ description: >-
 # TL;DR — the wall of text, minus the wall
 
 Re-read what is on screen and emit the short version. **No new tool calls, no new work, no new
-claims.** Needs fresh state → `/sitrep`; this compresses text.
+claims.** Needs fresh state → go and observe it; this only compresses text.
 
 Target: the most recent long output, or the last few if they piled up. If the user names one ("tldr
 that review", "tldr the subagent's report", "tldr this file"), compress that — reading a named file

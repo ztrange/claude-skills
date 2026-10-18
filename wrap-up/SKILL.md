@@ -14,9 +14,10 @@ In order. **Each step gates the next** — a failure stops the sequence and gets
 
 ## 1. Take stock
 
-Run `/sitrep`. Anything still in **Remaining** or **Needs you** → stop and show it.
+**Observe, don't recall**: `git status`, `git log @{u}..`, the PR and its CI, the last test run.
+Work left unfinished, or a decision still unanswered → stop and show it.
 
-**Needs you** means questions the *user's work* left behind, not ones about this run's own mechanics:
+A decision means one the *user's work* left behind, not one about this run's own mechanics:
 "confirm removing the worktree" is not one — steps 2–4 settle it.
 
 ## 2. Land
@@ -75,5 +76,13 @@ worktree by default. Reversible — archived sessions reopen from the Archived l
 
 ## Report
 
-What landed (PR url, merge sha), what was deleted (worktree path, branches, scratch files), what you
-left alone and why.
+**Very succinct.** The shortest thing that is still complete: 8 lines hard cap, one line per bullet,
+no preamble, no walkthrough, nothing the diff already says.
+
+- **Landed** — PR url, merge sha.
+- **Deleted** — worktree path, branches, scratch files.
+- **Left alone** — each with the fact that holds it (open PR, another session's worktree).
+
+Written-but-unverified never reads as landed. A bullet with nothing to say gets dropped, not padded.
+A step that failed or was skipped goes in regardless of the cap — that is the one thing brevity
+never cuts.
