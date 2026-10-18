@@ -3,9 +3,9 @@ name: wrap-up
 description: >-
   Close out a finished piece of work — land the change, clean the scratch files, remove the git
   worktree, archive the session. Use when the user says "wrap up", "clean up", "we're done here",
-  "close this out", "tidy up and archive", "remove the worktree", "archive this session", or "limpia
-  y archiva". Fails closed on anything unmerged, unpushed or uncommitted: it verifies from PR state
-  and the actual tree before deleting, and archiving is always the last step.
+  "close this out", "tidy up and archive", "remove the worktree", "archive this session". Fails
+  closed on anything unmerged, unpushed or uncommitted: it verifies from PR state and the actual
+  tree before deleting, and archiving is always the last step.
 ---
 
 # Wrap-up — land it, clean it, archive it

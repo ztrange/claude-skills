@@ -5,9 +5,9 @@ description: >-
   `~/.claude/`, report what changed, reconcile the links against what those repos now contain. Use
   when the user says "update my skills", "sync my config", "pull the latest skills", "update the
   installed stuff", "did my skills change", "relink the skills", "what skills do I have", "list my
-  skills", "qué skills tengo", "actualiza mis skills". Adds links for new skills, removes only
-  dangling ones, always points at the main clone rather than a worktree, says whether a restart is
-  needed, and always ends with the full roster — even on a run where nothing changed.
+  skills". Adds links for new skills, removes only dangling ones, always points at the main clone
+  rather than a worktree, says whether a restart is needed, and always ends with the full roster —
+  even on a run where nothing changed.
 ---
 
 # Sync-config — pull the repos, then fix the links

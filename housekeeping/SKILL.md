@@ -3,12 +3,12 @@ name: housekeeping
 description: >-
   Clean a git repo of what nobody is using — local branches whose PR landed, worktrees provably on
   `main`, dead remote-tracking refs and worktree registrations — and report the rest with the fact
-  that keeps it. Use when the user says "clean the repo", "housekeeping", "prune branches", "delete
-  stale branches", "remove old worktrees", "which worktrees are still in use", "tidy the branches",
-  "gc the repo", "limpia el repo", "borra las ramas viejas". Every deletion cites an observed fact —
-  PR state, ancestry of `origin/main`, a clean tree, no process inside — never age, name or
-  ordering. `git branch --merged` is never consulted. Remote branches and stashes only on an
-  explicit yes; an open PR, never.
+  that keeps it. Use when the user says "clean the repo", "housekeeping", "prune branches",
+  "delete stale branches", "remove old worktrees", "which worktrees are still in use", "tidy the
+  branches", "gc the repo". Every deletion cites an observed fact — PR state, ancestry of
+  `origin/main`, a clean tree, no process inside — never age, name or ordering. `git branch
+  --merged` is never consulted. Remote branches and stashes only on an explicit yes; an open PR,
+  never.
 ---
 
 # Housekeeping — delete only what has a fact behind it

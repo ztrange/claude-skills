@@ -3,15 +3,16 @@ name: handoff
 description: >-
   Write a self-contained prompt that resumes this work in a fresh context — a new session, another
   machine, or right after /clear — as a markdown file, and hand back its path. Use when the user
-  says "write me a handoff", "prompt to continue", "I'm going to clear the context", "continue this
-  in a new session", "pick this up tomorrow", "context is getting full", "pásame el prompt para
-  continuar", or when a compaction is imminent and unfinished work would be lost. Carries the
-  objective, observed state, the next concrete action, the dead ends worth not repeating, and the
-  working mode — veri where the project already uses it, `/delegate` for the rest. Two kinds,
-  selected by argument: `/handoff reset` is for this same session after a `/clear` and records the
-  session's name and id so the resuming agent can check the paste landed in the right session;
-  `/handoff delegate` is for a different session or machine and deliberately carries no such check.
-  No argument → inferred from what they said.
+  says "gimme the prompt", "gimme a prompt", "gimme the handoff prompt", "gimme the handoff",
+  "write me a handoff", "prompt to continue", "I'm going to clear the context", "continue this in
+  a new session", "pick this up tomorrow", "context is getting full" or when a compaction is
+  imminent and unfinished work would be lost. Carries the objective, observed state, the next
+  concrete action, the dead ends worth not repeating, and the working mode — veri where the
+  project already uses it, `/delegate` for the rest. Two kinds, selected by argument: `/handoff
+  reset` is for this same session after a `/clear` and records the session's name and id so the
+  resuming agent can check the paste landed in the right session; `/handoff delegate` is for a
+  different session or machine and deliberately carries no such check. No argument → inferred from
+  what they said.
 ---
 
 # Handoff — a file that survives /clear

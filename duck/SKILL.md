@@ -2,13 +2,13 @@
 name: duck
 description: >-
   Explain just the issue on the table, briefly, so the user can make an informed choice — the
-  mechanism, what goes wrong, what was ruled out, and the ask stated so it can be answered. Assumes
-  they know the product; explains the problem, not the project. Use when the user says "duck", "duck
-  it", "duck this", "talk to the duck", "explain it to the duck", "I don't follow", "I don't
-  understand what you're asking me", "explain that from scratch", "what do you mean by that option",
-  "explain that second one", "what did you just find", "what does that error actually mean",
-  "explícamelo desde cero", "no entiendo qué me estás pidiendo", or when an answer resolves a
-  different question than the one asked. Ends by offering more detail.
+  mechanism, what goes wrong, what was ruled out, and the ask stated so it can be answered.
+  Assumes they know the product; explains the problem, not the project. Use when the user says
+  "duck", "duck it", "duck this", "talk to the duck", "explain it to the duck", "I don't follow",
+  "I don't understand what you're asking me", "explain that from scratch", "what do you mean by
+  that option", "explain that second one", "what did you just find", "what does that error
+  actually mean" or when an answer resolves a different question than the one asked. Ends by
+  offering more detail.
 ---
 
 # Duck — explain the issue, not the project

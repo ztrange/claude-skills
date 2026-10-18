@@ -1,13 +1,13 @@
 ---
 name: house-style
 description: >-
-  Bring a project up to the engineering conventions I work by — stack, architecture, tests, and the
-  documentation that keeps them honest — and record them in that repo's own CLAUDE.md so the next
-  session inherits them instead of re-deriving them. Use when the user says "set up this project",
-  "onboard this repo", "write the CLAUDE.md", "document this project for agents", "apply my
-  preferences", "what are my conventions", "how do I like things done", "configura este proyecto", or
-  when starting work in a repo that has no CLAUDE.md. Reads what the project already does before
-  proposing anything: existing code wins on style, and these preferences steer what is newly designed.
+  Bring a project up to the engineering conventions I work by — stack, architecture, tests, and
+  the documentation that keeps them honest — and record them in that repo's own CLAUDE.md so the
+  next session inherits them instead of re-deriving them. Use when the user says "set up this
+  project", "onboard this repo", "write the CLAUDE.md", "document this project for agents", "apply
+  my preferences", "what are my conventions", "how do I like things done" or when starting work in
+  a repo that has no CLAUDE.md. Reads what the project already does before proposing anything:
+  existing code wins on style, and these preferences steer what is newly designed.
 ---
 
 # House style — the conventions, and where they get written down
