@@ -1,0 +1,1 @@
+../../aws-sso-sessions/references/session-duration.md

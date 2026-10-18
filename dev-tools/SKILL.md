@@ -24,7 +24,12 @@ Those three paths are symlinks to the real skill directories, which is what keep
 free of absolute paths. A relative path *inside* the file you read resolves against the symlink you
 read it through, not against this directory: in `guardrails/SKILL.md`, `references/evidence.md`
 means `guardrails/references/evidence.md`. Follow such a path exactly as written — prefix it with
-the argument's directory, never rewrite it and never go looking for it next to this file.
+the argument's directory, never rewrite it.
+
+`references/` here is the net under that rule: one symlink per reference file any job names, so a
+path resolved against this directory instead reads the same file rather than erroring into a hunt.
+It holds only while the basenames don't collide — a new reference under any job needs a basename
+unique across all three, then a symlink here.
 
 Verified: only `<skills root>/<name>/SKILL.md` is registered as a skill, so the `SKILL.md` behind
 each symlink here is read as a file and never loaded as a skill of its own. That is what keeps
@@ -42,5 +47,6 @@ Each carries an `.on-demand` marker, so `/sync-config` deliberately leaves it un
 the intended state, not an oversight. Reaching them through this skill replaces the older
 link-it-then-remove-it dance: nothing to install by hand, nothing to remember to undo.
 
-Adding a fourth: drop the marker in its directory, symlink it here, add the row. Keep the
-description out of it — the saving *is* the trigger phrases not being loaded.
+Adding a fourth: drop the marker in its directory, symlink it here, add the row, and symlink each
+`references/` file it names into `references/` here. Keep the description out of it — the saving
+*is* the trigger phrases not being loaded.
