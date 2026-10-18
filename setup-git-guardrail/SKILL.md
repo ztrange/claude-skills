@@ -1,15 +1,15 @@
 ---
 name: setup-git-guardrail
 description: >-
-  Install git hooks that keep the primary clone parked on `main` and push all work into worktrees —
-  refusing commits made in the primary, catching the paths `pre-commit` never sees (`cherry-pick`,
-  `revert`, `reset --hard`, `--no-verify`), and warning when the primary drifts off `main` — plus a
-  Claude Code `SessionStart` hook that restates that drift in later sessions. Use when the user says
-  "set up git guardrails", "install guardrails", "protect main", "prevent commits to main", "stop me
-  committing in the primary clone", "add the git hooks", "set up branch protection", "update the git
-  hooks", "the primary is on the wrong branch", "detect drift off main", or "instala los guardrails".
-  Checks what git already enforces first, verifies by testing the failure path, and states plainly
-  where the guardrail can be bypassed.
+  Install git hooks that keep the primary clone parked on `main` and push all work into worktrees
+  — refusing commits made in the primary, catching the paths `pre-commit` never sees
+  (`cherry-pick`, `revert`, `reset --hard`, `--no-verify`), and warning when the primary drifts
+  off `main` — plus a Claude Code `SessionStart` hook that restates that drift in later sessions.
+  Use when the user says "set up git guardrails", "install guardrails", "protect main", "prevent
+  commits to main", "stop me committing in the primary clone", "add the git hooks", "set up branch
+  protection", "update the git hooks", "the primary is on the wrong branch", "detect drift off
+  main". Checks what git already enforces first, verifies by testing the failure path, and states
+  plainly where the guardrail can be bypassed.
 ---
 
 # Install guardrails — the primary clone holds `main`, work happens in worktrees

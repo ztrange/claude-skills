@@ -1,13 +1,13 @@
 ---
 name: low-fuel
 description: >-
-  Throttle spending and get unfinished work to a durable state before the budget runs out — commit,
-  push, draft PR, and only then prose. Use when the user says "we're running out of tokens", "low on
-  context", "almost out of budget", "conserve tokens", "throttle", "stop being thorough", "make sure
-  this lands", "estamos por quedarnos sin tokens", "ya casi no queda contexto", or when the harness
-  warns that context is nearly full mid-task. Trades breadth for landing: drops exploration,
-  subagents, option surveys and narration, keeps the verification that stops broken work from
-  shipping, and never lets budget pressure excuse skipping a confirmation gate.
+  Throttle spending and get unfinished work to a durable state before the budget runs out —
+  commit, push, draft PR, and only then prose. Use when the user says "we're running out of
+  tokens", "low on context", "almost out of budget", "conserve tokens", "throttle", "stop being
+  thorough", "make sure this lands" or when the harness warns that context is nearly full
+  mid-task. Trades breadth for landing: drops exploration, subagents, option surveys and
+  narration, keeps the verification that stops broken work from shipping, and never lets budget
+  pressure excuse skipping a confirmation gate.
 ---
 
 # Low fuel — land what's in flight, stop paying for the rest

@@ -1,16 +1,16 @@
 ---
 name: afk
 description: >-
-  Drive the work forward unattended: keep going on every thread that doesn't need the user, park the
-  ones that do with the question recorded, then spend the remaining time making the next session
-  cheaper — stale docs, contradictions, test gaps, dead code. Use when the user says "afk", "I'm
-  going afk", "keep going without me", "do what you can without me", "work on this while I'm out",
-  "I'll be back in an hour", "drive it yourself", "sigue sin mí", "no me esperes", or otherwise hands
-  over and leaves. Their absence is not authorization: irreversible actions wait, and a decision that
-  needed them is parked, not guessed. Merging is the one exception, built in: "afk" is the standing
-  instruction to merge whatever the run finishes in the project repo, through the `merge` skill,
-  unless they say "don't merge" on the way out. Other repos are out of scope: never start work in
-  one, never merge there.
+  Drive the work forward unattended: keep going on every thread that doesn't need the user, park
+  the ones that do with the question recorded, then spend the remaining time making the next
+  session cheaper — stale docs, contradictions, test gaps, dead code. Use when the user says
+  "afk", "I'm going afk", "keep going without me", "do what you can without me", "work on this
+  while I'm out", "I'll be back in an hour", "drive it yourself" or otherwise hands over and
+  leaves. Their absence is not authorization: irreversible actions wait, and a decision that
+  needed them is parked, not guessed. Merging is the one exception, built in: "afk" is the
+  standing instruction to merge whatever the run finishes in the project repo, through the `merge`
+  skill, unless they say "don't merge" on the way out. Other repos are out of scope: never start
+  work in one, never merge there.
 ---
 
 # AFK — drive what can be driven, park what can't

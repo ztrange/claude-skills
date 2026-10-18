@@ -2,11 +2,11 @@
 name: merge
 description: >-
   Land a pull request safely: check `main` has not moved since the branch was cut, rebase and
-  force-push under a pinned lease if it has, read the CI result rather than trusting a tick — or the
-  absence of one — mark a draft ready and re-read the checks that readying can start, then
-  rebase-merge, cut the capability tag in a repo that versions that way, and clean up the branch, the
-  primary clone and the worktree. Use when the user says "merge it", "land this", "merge the PR",
-  "ship it", "mergea", or "haz merge". Never merges without being told to.
+  force-push under a pinned lease if it has, read the CI result rather than trusting a tick — or
+  the absence of one — mark a draft ready and re-read the checks that readying can start, then
+  rebase-merge, cut the capability tag in a repo that versions that way, and clean up the branch,
+  the primary clone and the worktree. Use when the user says "merge it", "land this", "merge the
+  PR", or "ship it". Never merges without being told to.
 ---
 
 # Merge — land it on a `main` that has not moved under you

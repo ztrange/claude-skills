@@ -4,9 +4,9 @@ description: >-
   Compress the wall of text just produced into the few lines that change what the user does next —
   the outcome, the load-bearing facts, the buried caveats, the pending decision. Use when the user
   says "tldr", "tl;dr", "too long", "short version", "bottom line", "in short", "condense that",
-  "I'm not reading all that", "resúmelo", "en corto", "hazme un tldr", or asks what a long block of
-  output actually means. Compresses text that already exists — the last answer, a subagent report, a
-  review, a log — rather than checking the state of the work.
+  "I'm not reading all that", or asks what a long block of output actually means. Compresses text
+  that already exists — the last answer, a subagent report, a review, a log — rather than checking
+  the state of the work.
 ---
 
 # TL;DR — the wall of text, minus the wall

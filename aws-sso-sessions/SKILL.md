@@ -2,12 +2,12 @@
 name: aws-sso-sessions
 description: >-
   Migrate an AWS CLI v2 config from the legacy per-profile SSO form (`sso_start_url` inside each
-  profile) to `sso-session` blocks, then explain why a login expires when it does. Use when the user
-  says "migrate my aws config", "aws sso session", "multiple aws sso logins", "log into two aws
-  accounts", "why does my aws sso keep expiring", "keep my aws session alive", "sso-session", "migra
-  mi config de aws" — or when they fight repeated AWS SSO re-authentication, want two accounts or
-  portals signed in at once, or ask where the session length is set. Backs up the config, verifies
-  the rewrite without opening a browser, and never runs `aws sso login` itself.
+  profile) to `sso-session` blocks, then explain why a login expires when it does. Use when the
+  user says "migrate my aws config", "aws sso session", "multiple aws sso logins", "log into two
+  aws accounts", "why does my aws sso keep expiring", "keep my aws session alive", "sso-session" —
+  or when they fight repeated AWS SSO re-authentication, want two accounts or portals signed in at
+  once, or ask where the session length is set. Backs up the config, verifies the rewrite without
+  opening a browser, and never runs `aws sso login` itself.
 ---
 
 # AWS SSO sessions — migrate the config, then explain the clock
