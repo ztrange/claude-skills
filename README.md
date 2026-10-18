@@ -106,7 +106,9 @@ edits are live — there is no build or install step for day-to-day use.
   session of every project, and a description is mostly trigger phrases. These three carried 362
   words of trigger surface between them for 2 invocations total, so they moved behind a 24-word
   slash-only description. `dev-tools/` holds a symlink to each real directory, so a `references/…`
-  path inside one still resolves and nothing had to be rewritten. No argument prints the table.
+  path inside one still resolves and nothing had to be rewritten — and `dev-tools/references/`
+  symlinks the four reference files too, so the same path resolved against the dispatcher by
+  mistake reads the right file instead of erroring. No argument prints the table.
 
 - **[`aws-sso-sessions`](aws-sso-sessions/SKILL.md)** — **on demand, not installed by default.**
   Migrates `~/.aws/config` off the legacy per-profile SSO form onto `sso-session` blocks, which is
