@@ -40,6 +40,7 @@ edits are live — there is no build or install step for day-to-day use.
   to fail for the right reason, and docs that point at their authority instead of asserting a
   number. Ends by writing them into that repo's own `CLAUDE.md`, so it fires once per project
   rather than once per session. Existing code wins on style; these steer what's newly designed.
+  **On demand** — reach it with `/dev-tools house-style`, not a trigger phrase.
 
 - **[`low-fuel`](low-fuel/SKILL.md)** — the budget is nearly gone and the work isn't finished:
   throttle spending and get what's in flight somewhere durable. Commit, push, draft PR, *then*
@@ -68,7 +69,8 @@ edits are live — there is no build or install step for day-to-day use.
   check looks like — then ready a draft, merge, and clean up branch, primary clone and worktree,
   each only behind an explicit `state == MERGED` check, since deleting a PR's head branch closes it.
 
-- **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — make the rules enforceable instead of
+- **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — **on demand**, reached with
+  `/dev-tools guardrails`. Make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under
   `--no-verify` (the only hook that flag can't skip), scoped so `git pull` still works, plus
   optional GitHub branch protection for the layer that can't be bypassed locally. The one thing no
@@ -98,6 +100,14 @@ edits are live — there is no build or install step for day-to-day use.
   with an open PR are never touched. `wrap-up` closes out *this* session's work; this one sweeps
   everything the previous sessions left behind.
 
+- **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
+  `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`. A skill body is already
+  lazy — it isn't in the prompt until it's called — but its `description` is resident in every
+  session of every project, and a description is mostly trigger phrases. These three carried 362
+  words of trigger surface between them for 2 invocations total, so they moved behind a 24-word
+  slash-only description. `dev-tools/` holds a symlink to each real directory, so a `references/…`
+  path inside one still resolves and nothing had to be rewritten. No argument prints the table.
+
 - **[`aws-sso-sessions`](aws-sso-sessions/SKILL.md)** — **on demand, not installed by default.**
   Migrates `~/.aws/config` off the legacy per-profile SSO form onto `sso-session` blocks, which is
   what buys several SSO logins at once and refresh tokens that outlive the first hour; then
@@ -105,14 +115,9 @@ edits are live — there is no build or install step for day-to-day use.
   the three settings in that panel is the one that matters. Backs up before writing, verifies the
   rewrite without opening a browser, and never runs `aws sso login` itself. The job happens once
   per machine, so it carries an `.on-demand` marker: `/sync-config` deliberately leaves it
-  unlinked, and it gets installed for the migration and removed after. Link it from the primary
-  clone — a link into a worktree dangles the moment that worktree is removed — and restart Claude
-  Code once, since a new directory under `~/.claude/skills/` is not seen until then.
-
-  ```bash
-  ln -s "$PWD/aws-sso-sessions" ~/.claude/skills/aws-sso-sessions   # then, when done:
-  rm ~/.claude/skills/aws-sso-sessions
-  ```
+  unlinked. Reach it with `/dev-tools aws-sso` — that replaces the older dance of linking it for
+  the migration and removing it afterwards, so there is nothing to install by hand and nothing to
+  remember to undo.
 
 - **`ja-changelog`** — **moved** into its product repo `erliamx/ja-changelog` (under `skill/`), so it
   sits with the app it feeds (DynamoDB + API + site). Since 2026-08-13 it also *installs* with that
