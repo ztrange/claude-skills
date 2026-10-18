@@ -1,0 +1,12 @@
+Not linked into ~/.claude/skills/ by default, and /sync-config leaves it alone.
+
+This skill does a job that happens once per repo, so carrying its trigger phrases in the
+always-loaded skill list costs prompt surface in every session of every project for a job you
+always know you want before you type. It is reached by argument instead:
+
+  /dev-tools house-style
+
+dev-tools/ holds a symlink to this directory, so nothing needs installing by hand and nothing
+needs removing afterwards. Read dev-tools/SKILL.md for the dispatch table.
+
+Any skill directory carrying this marker is treated the same way.

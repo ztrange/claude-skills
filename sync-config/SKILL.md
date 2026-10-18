@@ -63,9 +63,10 @@ Nothing changed → say so in one line, then go to section 6 anyway.
 Link to the **main clone**, never a worktree path: the worktree goes when its branch lands, and the
 link dies with it.
 
-**An `.on-demand` marker means no link is the intended state** — a once-only job, installed by hand
-and removed after, so auto-linking undoes a decision. `find <repo> -maxdepth 2 -name .on-demand`
-lists them.
+**An `.on-demand` marker means no link is the intended state** — a once-only job, either installed
+by hand and removed after, or reached by argument through `/dev-tools`. Either way auto-linking
+undoes a decision. `find <repo> -maxdepth 2 -name .on-demand` lists them, and the marker itself says
+which case it is.
 
 **A linked `.on-demand` skill gets said out loud** — nothing breaks, it just sits in the loaded set
 forever. Flag it in its roster row and in the report, with the command ready:
