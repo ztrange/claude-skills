@@ -7,9 +7,11 @@ description: >-
   in a new session", "pick this up tomorrow", "context is getting full", "pásame el prompt para
   continuar", or when a compaction is imminent and unfinished work would be lost. Carries the
   objective, observed state, the next concrete action, the dead ends worth not repeating, and the
-  working mode — veri where the project already uses it, `/delegate` for the rest. A same-session
-  handoff, for after a `/clear`, also records the session's name and id so the resuming agent can
-  check the paste landed in the right session; a portable one deliberately carries no such check.
+  working mode — veri where the project already uses it, `/delegate` for the rest. Two kinds,
+  selected by argument: `/handoff reset` is for this same session after a `/clear` and records the
+  session's name and id so the resuming agent can check the paste landed in the right session;
+  `/handoff delegate` is for a different session or machine and deliberately carries no such check.
+  No argument → inferred from what they said.
 ---
 
 # Handoff — a file that survives /clear
@@ -23,12 +25,13 @@ change the next action; drop empty sections.
 
 ## Delivery — a file plus one line
 
-Write the markdown to the scratchpad directory as `handoff-<slug>-<YYYYMMDD>.md`, then reply with
-exactly one line, **always inside a fenced code block**:
+Write the markdown to the scratchpad directory as `handoff-<kind>-<slug>-<YYYYMMDD>.md` — `kind` is
+`reset` or `delegation`, so the path itself says which it is, and the path is all the user sees before
+pasting it. Then reply with exactly one line, **always inside a fenced code block**:
 
 ````
 ```
-Read this handoff prompt and resume the session: /abs/path/to/handoff-<slug>-<date>.md
+Read this handoff prompt and resume the session: /abs/path/to/handoff-reset-<slug>-<date>.md
 ```
 ````
 
@@ -41,18 +44,34 @@ job. Absolute path always; the next session may start elsewhere.
   file, not as well as.
 - Re-generate rather than edit a stale file; a handoff is a snapshot.
 
-## Which handoff is this — and only one kind gets an identity check
+## Which kind — from the argument, or inferred
 
-| They said | Kind | Identity block |
+`/handoff <kind>` picks it. Case-insensitive, and these are the whole accepted set:
+
+| Argument | Kind | Identity block |
 |---|---|---|
-| "I'm going to clear the context", "context is getting full", a compaction is imminent | **Same session, cleared** — it comes back to *this* process | **Yes** |
-| "pick this up tomorrow", "continue this in a new session", "another machine", "send this to another session" | **Portable** — meant for a different session | **No** |
+| `reset`, `clear`, `self`, `same` | **Reset** — comes back to *this* process after a `/clear` | **Yes** |
+| `delegate`, `delegation`, `portable`, `send`, `other`, `new` | **Delegation** — a different session, agent or machine | **No** |
+
+**An unrecognised argument is not a kind.** Say what you got and the two valid ones; never guess
+which was meant, and never treat it as a slug for the filename.
+
+No argument → infer, then build it without asking:
+
+| They said | Kind |
+|---|---|
+| "I'm going to clear the context", "context is getting full", a compaction is imminent | **Reset** |
+| "pick this up tomorrow", "continue this in a new session", "another machine", "send this to another session" | **Delegation** |
 
 Neither fits → ask, in one line. Guessing wrong either blocks the session meant to pick it up or
 drops the check that stops a paste landing in the wrong tree.
 
-**Same-session handoffs open with a session check, before `## Objective`.** `/clear` keeps the
-process, so name and id survive it — the only thing a resuming agent can check:
+A **delegation** handoff is not the `/delegate` skill: that one runs subagents inside this session,
+this one hands the whole task to a session you are not driving. The `/delegate` line inside
+**Working mode** is advice to the recipient, and appears in both kinds.
+
+**Reset handoffs open with a session check, before `## Objective`.** `/clear` keeps the process, so
+name and id survive it — the only thing a resuming agent can check:
 
 ```
 get_session with session_id: "self"   → .title (what /name sets) and .sessionId
@@ -69,7 +88,7 @@ Verify with `get_session` on `"self"` and compare the name; if the name was chan
 Doesn't match → stop. Say which session this handoff is for and do nothing else.
 ```
 
-**Portable handoffs carry no such block**, deliberately: an identity gate would refuse the very
+**Delegation handoffs carry no such block**, deliberately: an identity gate would refuse the very
 session it was written for. `## State`'s repo, branch and worktree path pin them to a tree without
 blocking.
 

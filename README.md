@@ -55,11 +55,16 @@ edits are live — there is no build or install step for day-to-day use.
   files, remove the git worktree, archive the session. Fails closed on anything unmerged,
   unpushed, or uncommitted.
 
-- **[`handoff`](handoff/SKILL.md)** — a prompt that resumes the work in a fresh context (new
-  session, or after `/clear`): objective, observed state, the next concrete action, the dead ends
-  worth not repeating, and the working mode — veri for development if the project already uses it,
-  `/delegate` for everything else, to keep the next context small. It lands as a markdown file and
-  hands back one line pointing at it, so resuming is a paste of the path rather than of the prompt.
+- **[`handoff`](handoff/SKILL.md)** — a prompt that resumes the work in a fresh context: objective,
+  observed state, the next concrete action, the dead ends worth not repeating, and the working mode —
+  veri for development if the project already uses it, `/delegate` for everything else, to keep the
+  next context small. It lands as a markdown file and hands back one line pointing at it, so resuming
+  is a paste of the path rather than of the prompt. Two kinds, picked by argument: `/handoff reset`
+  for this same session after a `/clear`, which records the session's name and id so the resuming
+  agent can check the paste landed where it was meant to, and `/handoff delegate` for a different
+  session or machine, which deliberately carries no such check — an identity gate there would refuse
+  the only session that was supposed to run it. The kind is in the filename too, since the path is
+  all I see before pasting.
 - **[`merge`](merge/SKILL.md)** — land a PR on a `main` that may have moved: detect it locally
   rather than trusting `mergeStateStatus`, rebase, force-push under a *pinned* lease (the bare one
   silently clobbers after any fetch), read the CI result instead of the tick — *and* instead of the
