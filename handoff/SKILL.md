@@ -28,13 +28,19 @@ change the next action; drop empty sections.
 
 Write the markdown to the scratchpad directory as `handoff-<kind>-<slug>-<YYYYMMDD>.md` — `kind` is
 `reset` or `delegation`, so the path itself says which it is, and the path is all the user sees before
-pasting it. Then reply with exactly one line, **always inside a fenced code block**:
+pasting it. Then reply with exactly one line, **always inside a fenced code block** — a short
+assertion of what the prompt is for, then the absolute path:
 
 ````
 ```
-Read this handoff prompt and resume the session: /abs/path/to/handoff-reset-<slug>-<date>.md
+<what this prompt is for>: /abs/path/to/handoff-<kind>-<slug>-<date>.md
 ```
 ````
+
+Write that lead yourself, under a dozen words, naming the work: a reset line tells the process to
+resume what it was already doing ("Resume the config-slimming session"), a delegation line tells a
+session holding none of this context what it is picking up ("Give veri's reporting rules a home").
+No fixed sentence — one phrasing cannot do both.
 
 Nothing else in the reply — no summary, no pasted copy; prose beside the line makes it a selection
 job. Absolute path always; the next session may start elsewhere.
