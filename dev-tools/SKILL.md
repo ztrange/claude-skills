@@ -21,8 +21,14 @@ surface between them for 2 invocations total. So they are reached by argument in
 | `aws-sso` | Migrate `~/.aws/config` onto `sso-session` blocks, then explain where session duration lives | `aws-sso/SKILL.md` |
 
 Those three paths are symlinks to the real skill directories, which is what keeps this dispatcher
-free of absolute paths. Read through them and a `references/…` path *inside* the file resolves on
-its own — follow it exactly as written, and don't rewrite it relative to this directory.
+free of absolute paths. A relative path *inside* the file you read resolves against the symlink you
+read it through, not against this directory: in `guardrails/SKILL.md`, `references/evidence.md`
+means `guardrails/references/evidence.md`. Follow such a path exactly as written — prefix it with
+the argument's directory, never rewrite it and never go looking for it next to this file.
+
+Verified: only `<skills root>/<name>/SKILL.md` is registered as a skill, so the `SKILL.md` behind
+each symlink here is read as a file and never loaded as a skill of its own. That is what keeps
+their descriptions out of the always-resident prompt, which is the whole point of this dispatcher.
 
 **No argument, or one not in the table** → print the table and stop. Never pick a job for the user:
 all three write to their machine, and two of them install hooks.
