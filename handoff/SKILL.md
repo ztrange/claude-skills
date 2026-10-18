@@ -17,7 +17,7 @@ description: >-
 # Handoff — a file that survives /clear
 
 **For the next agent, not the user**: second person, imperative, no pronoun pointing at this
-session. (`/sitrep` is for the user; this hands an agent enough to work without a catch-up
+session. (A status report is for the user; this hands an agent enough to work without a catch-up
 question.)
 
 **Short.** 25 lines in the file, 40 the hard cap, session check excluded. Cut any line that does not
