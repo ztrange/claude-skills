@@ -274,11 +274,17 @@ GIT_COMMITTER_DATE="$(git log -1 --format=%aI <sha>)" git tag -a v0.N <sha> -m "
 git -C <primary-clone> pull --ff-only        # the primary is the only place main advances
 state="$(gh pr view <n> --json state -q .state)"
 if [ "$state" != "MERGED" ]; then echo "not merged (state=$state); worktree kept" >&2; exit 1; fi
+cd <primary-clone>                           # never hold the worktree yourself
+holders="$(lsof -t +D <path> 2>/dev/null | sort -u)"
+if [ -n "$holders" ]; then echo "worktree kept: in use by pid(s) $holders" >&2; ps -o pid=,command= -p "$(echo $holders | tr ' ' ,)" >&2; exit 1; fi
 git worktree remove <path>
 ```
 
 Once 6c has been skipped the worktree is the last copy of an unmerged branch, so it gets the same
-gate. `git worktree remove` refuses a dirty tree on its own — never add `--force`. This skill does not
+gate. `git worktree remove` refuses a dirty tree on its own — never add `--force`. It does not check
+whether a process is still inside the tree, so the `lsof` gate does: a session or agent whose
+working directory is there loses it mid-command when the directory vanishes. A holder is reported
+and the worktree kept, never killed; the run that owns it, or `housekeeping`, removes it later. This skill does not
 delete the local branch; that is `housekeeping`'s job.
 
 Report the merge sha **and the tag**, and say explicitly what was skipped — a conflict handed back, a
