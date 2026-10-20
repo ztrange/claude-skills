@@ -275,8 +275,14 @@ git -C <primary-clone> pull --ff-only        # the primary is the only place mai
 state="$(gh pr view <n> --json state -q .state)"
 if [ "$state" != "MERGED" ]; then echo "not merged (state=$state); worktree kept" >&2; exit 1; fi
 cd <primary-clone>                           # never hold the worktree yourself
-holders="$(lsof -t +D <path> 2>/dev/null | sort -u)"
-if [ -n "$holders" ]; then echo "worktree kept: in use by pid(s) $holders" >&2; ps -o pid=,command= -p "$(echo $holders | tr ' ' ,)" >&2; exit 1; fi
+command -v lsof >/dev/null || { echo "no lsof; worktree kept" >&2; exit 1; }
+self=" $(p=$$; while [ "$p" -gt 1 ]; do printf '%s ' "$p"; p="$(ps -o ppid= -p "$p" | tr -d ' ')"; done)"
+holders="$(lsof -t +D <path> 2>/dev/null | sort -u | while read -r p; do
+  case "$self" in *" $p "*) ;; *) echo "$p" ;; esac; done)"
+if [ -n "$holders" ]; then
+  echo "worktree kept; in use by:" >&2
+  ps -o pid=,command= -p "$(echo "$holders" | paste -sd, -)" >&2; exit 1
+fi
 git worktree remove <path>
 ```
 
@@ -284,8 +290,16 @@ Once 6c has been skipped the worktree is the last copy of an unmerged branch, so
 gate. `git worktree remove` refuses a dirty tree on its own — never add `--force`. It does not check
 whether a process is still inside the tree, so the `lsof` gate does: a session or agent whose
 working directory is there loses it mid-command when the directory vanishes. A holder is reported
-and the worktree kept, never killed; the run that owns it, or `housekeeping`, removes it later. This skill does not
-delete the local branch; that is `housekeeping`'s job.
+and the worktree kept, never killed; the run that owns it, or `housekeeping`, removes it later.
+
+`self` is this shell's own ancestor chain — the shell, the Claude Code process, its launcher. A
+session started in the worktree it is merging holds that worktree through those ancestors, so
+without the exclusion the gate keeps every worktree a session merges from inside, which is the
+normal case. Only the chain is excluded: a terminal tab or another agent in the same tree is not
+an ancestor, and still keeps it. No `lsof` fails closed — an empty answer from a missing tool is
+not "nobody is inside". `paste -sd,` joins the pids because zsh does not word-split an unquoted
+`$holders`, so `echo $holders | tr ' ' ,` hands `ps` one newline-joined argument it rejects.
+This skill does not delete the local branch; that is `housekeeping`'s job.
 
 Report the merge sha **and the tag**, and say explicitly what was skipped — a conflict handed back, a
 pending check, a branch left in place, a tag not cut because the PR carried no capability.
