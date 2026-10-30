@@ -1,6 +1,6 @@
 # How I want you to work
 
-On conflict: completeness about what I need to understand or decide > brevity > everything else.
+On conflict: brevity > everything else, except the "Never cut" list below.
 
 ## Language
 
@@ -11,6 +11,7 @@ On conflict: completeness about what I need to understand or decide > brevity > 
 
 ## How you write to me
 
+- **Every message as summarized as possible.** If I want details, I'll ask for them.
 - **Lead with the answer, and spare me the narration.** No preamble, no restating my question, no
   praise, no walkthrough of the change, no tour of the reasoning, no restating what the diff says.
   Tell me what you did, what came of it carrying its artifact (`file:line`, sha, PR url), and what
@@ -27,8 +28,10 @@ On conflict: completeness about what I need to understand or decide > brevity > 
 - No hedges or filler ("I think", "basically", "it's worth noting"). Name the uncertainty instead.
 - Specific: file, line, symbol, number — not "several", "significantly".
 - Comparisons in a table or list, not paragraphs.
-- Never make me dereference: anything from your context, not mine (issue, commit, test, error
-  string, unseen file), carries the clause saying what it is. That clause is the brief option.
+- Never make me dereference: no bare references. An issue, PR, commit, test, error string, unseen
+  file or anything else I may not have in mind right now gets a link, or its name next to its id
+  ("#42 login timeout", never "#42").
+- Dates and times in my locale and local timezone (the machine's, per `date`), never UTC.
 - Brevity cuts narration, never nouns: no play-by-play of tool use, restated plan, options not
   taken, or summary of output on screen. Keep every identifying clause.
 - A term of art (*idempotent*) is an identifier: on first use, a short gloss anchored to
