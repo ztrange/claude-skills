@@ -53,15 +53,23 @@ the repo**; there is no ledger here and nothing reads it back.
   reads, no timings — a test that describes the implementation breaks on the refactor it was meant
   to protect.
 - **No production code in this phase.** Not a stub, not a signature, not an empty class to make the
-  import resolve. If the import has to resolve for the test to run, that import failure *is* the
-  red.
+  import resolve. **The subject not existing yet is a legitimate red** — `ImportError: cannot import
+  name 'split_cents'` is this step's failure, reported by most runners as an *error* rather than a
+  failure. Predict which of the two you will get; "1 error" where you predicted "1 failure" is a
+  divergence like any other.
 - **Predict the failure first.** Before running, state what you expect to see — which assertion,
-  which message. Then run only the suite holding the case, against unmodified code.
+  which message, failure or error. Then run only the suite holding the case, against unmodified
+  code. **That narrow command is usually not the configured one** — `.veri/test-command` holds a
+  whole-suite invocation, and its flags may not even be legal on the single-module form (`python3 -m
+  unittest discover -s tests -t .` → `python3 -m unittest tests.test_split`). Derive it from the
+  runner; a run that dies on its own arguments has told you nothing.
   - **It failed as predicted** → Green.
   - **It failed differently** → your model of the code is wrong. Read, do not patch. Fix the
     understanding, re-predict, re-run. A red you did not predict is worth more than a green.
-  - **It failed on a typo, a missing fixture, an unwired import** → that is not this step's red. Fix
-    the test and run again.
+  - **It failed by accident, not by the criterion** — a typo, a missing fixture, an import naming
+    the wrong module, a bad command line → that is not this step's red. Fix it and run again. The
+    test is `assert`ing nothing yet, so this costs only a re-run; mistake it for the red and you
+    commit a green that was never earned.
   - **It passed** → the criterion is already satisfied by code that exists. **Do not weaken the test
     to make it fail.** Either the step is redundant (say so, drop it) or the criterion was wrong
     (re-phrase it and start the Red again).
@@ -74,6 +82,12 @@ the repo**; there is no ledger here and nothing reads it back.
 
 - **The least production code that turns that case green.** No generality the test does not demand,
   no error handling nobody asked for, no second case handled in advance.
+- **"Least" means the simplest code that expresses the criterion, not the shortest text that
+  satisfies the assertion.** For "splits 900 three ways into [300, 300, 300]", that is
+  `[total // ways] * ways` — not `return [300, 300, 300]`, which passes, is genuinely smaller, and
+  pins nothing. A constant return is not a step; it buys a cycle of ceremony and leaves the next
+  test to do all the work. Write the obvious implementation of *this* criterion and let it stay
+  wrong for the criteria no test has stated yet.
 - **The test is untouched.** Editing the test in Green moves the goalposts; if the test is genuinely
   wrong, go back to Red and say why.
 - **Run the suites covering what you changed**, not just the one case. A green case over two reds
@@ -84,8 +98,9 @@ the repo**; there is no ledger here and nothing reads it back.
 
 ### 🧹 Refactor — bounded, behaviour-preserving, separately committed
 
-- **Bounds are the files this cycle touched.** `git show --name-only HEAD` is the list. Tidying
-  elsewhere is a different change and belongs in a different PR.
+- **Bounds are the source files this cycle touched.** `git show --name-only HEAD` is the list, minus
+  what is not code — the step commit may also carry a config file, a fixture, a lockfile. Tidying
+  outside that list is a different change and belongs in a different PR.
 - **Structural before cosmetic**, and cosmetic usually not at all: a duplicated branch, a name that
   lies, a seam missing where the step kept reaching through — those pay. Reformatting does not.
 - **One commit per transform**, `refactor: <what>`, so a break stays attributable.
