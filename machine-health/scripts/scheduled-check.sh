@@ -1,5 +1,6 @@
 #!/bin/sh
-# Run every 30 min by the user LaunchAgent that `/dev-tools machine-health` installs. No model, no
+# Run every 30 min by the user LaunchAgent that `/dev-tools machine-health` installs — as a copy in
+# ~/Library/Application Support/machine-health, so edit here then re-install. No model, no
 # tokens. It runs the snapshot with --fix, whose only automatic action is killing leaked Claude
 # Bash shells. A report is kept when anything was fixed or a WARN/CRIT remains; only the latter
 # posts a notification. Clean runs leave nothing but the timestamp in last-ok.
