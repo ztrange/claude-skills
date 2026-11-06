@@ -6,9 +6,8 @@ description: >-
   processes (Claude Bash shells left looping), zombies, idle week-old sessions, and runaway
   fseventsd / Spotlight. Use when the user says "machine health", "check hardware use", "orphan
   processes", "why is my Mac slow", "the computer is hot / beachballing", "what's eating CPU",
-  "kill the leaks", "fseventsd is stuck", or asks to schedule that check. Read-only until the user
-  says yes to a specific kill; never kills a live session's tree or anything outside their user
-  without them running it.
+  "kill the leaks", "fseventsd is stuck". Read-only until the user says yes to a specific kill;
+  never kills a live session's tree or anything outside their user without them running it.
 ---
 
 # Machine health — measure, attribute, then ask
@@ -23,7 +22,9 @@ python3 -I <this skill>/scripts/snapshot.py
 
 About 5 s (a 2 s `top` sample — `ps %cpu` is a decaying average and misses a burst). It prints
 load/memory/swap, CPU by tree, and findings, each with the command that would fix it. `--check`
-exits 1 on any WARN/CRIT; `--quiet` prints findings only.
+exits 1 on any WARN/CRIT; `--quiet` prints findings only; `--fix` kills leaked Claude Bash shells
+(the one fix safe unattended — it re-reads the pid's PPID, start time and command before each
+signal) and reports them as FIXED.
 
 **CPU by tree** is the table that answers "who": every busy process is summed into its nearest
 `claude` CLI ancestor (a session, with its cwd) or, failing that, its top ancestor below launchd.
@@ -77,16 +78,8 @@ A finding you couldn't measure — e.g. `lsof` returned no cwd — says so.
 
 ## 5. Scheduling
 
-Ask which; both create persistent config, so neither happens without a yes.
-
-| Option | Cost | Can it act? |
-|---|---|---|
-| **launchd + `scripts/scheduled-check.sh`** (recommended) | $0, ~1 s CPU per run | No — notifies on WARN/CRIT and keeps the report in `~/Library/Logs/machine-health/` (`latest.txt`); you run `/machine-health` to act |
-| Desktop-app scheduled task running `/machine-health` | A model run every time, findings or not | Only report; it should not kill unattended |
-
-Cloud routines (`/schedule`) can't see this machine — not an option.
-
-For launchd, fill `references/launchd.plist` (template, every 30 min, `Nice 10`) with the **main
-clone's** path to this skill, write it to `~/Library/LaunchAgents/com.user.machine-health.plist`,
-and give the user the `launchctl bootstrap` line from the template's header to run — then verify
-with `launchctl print gui/$(id -u)/com.user.machine-health | grep -E 'state|runs'`.
+Installing or removing the unattended side — a 30-min user agent running `--fix`, and a root
+watchdog that restarts a pegged `fseventsd` — is a once-per-machine job: `/dev-tools
+machine-health`. When it is installed, its findings are in `~/Library/Logs/machine-health/`
+(`latest.txt`, `fixed.log`) and `/var/log/machine-health-fseventsd.log` — read them as part of §1
+when the user asks what happened while they were away.

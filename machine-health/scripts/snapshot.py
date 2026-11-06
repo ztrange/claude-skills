@@ -5,12 +5,15 @@ system daemons. Kills nothing; prints findings with the command that would fix e
     python3 -I snapshot.py            # report, always exit 0
     python3 -I snapshot.py --check    # same report, exit 1 if any finding is WARN or CRIT
     python3 -I snapshot.py --quiet --check   # print only findings (for schedulers)
+    python3 -I snapshot.py --fix      # also kill leaked Claude Bash shells (the only auto-fix)
 
 macOS only: it reads `top -l`, `sysctl vm.swapusage` and `memory_pressure`.
 """
 import os
 import re
+import signal
 import subprocess
+import time
 import sys
 
 # Thresholds. CPU figures are percent of one core, measured over a 2 s `top` sample rather than
@@ -116,6 +119,28 @@ def launchd_pids():
     return pids
 
 
+def kill_leaked_shell(p):
+    """TERM, then KILL after 5 s. Re-reads the pid's command and start time first, so a pid
+    reused since the snapshot is never hit. Returns what happened, for the report."""
+    pid = p["pid"]
+    def ident():
+        out = run(["ps", "-o", "ppid=,lstart=,command=", "-p", str(pid)]).strip()
+        return out or None
+    before = ident()
+    if not before or before.split()[0] != "1" or not LEAKED_SHELL.search(before):
+        return "skipped: pid no longer a PPID-1 leaked shell"
+    for sig, wait in ((signal.SIGTERM, 5), (signal.SIGKILL, 2)):
+        try:
+            os.kill(pid, sig)
+        except ProcessLookupError:
+            return "gone"
+        for _ in range(wait * 10):
+            if ident() != before:
+                return f"killed ({sig.name})"
+            time.sleep(0.1)
+    return "STILL ALIVE after SIGKILL"
+
+
 def session_cwd(pid):
     out = run(["lsof", "-a", "-p", str(pid), "-d", "cwd", "-Fn"])
     for line in out.splitlines():
@@ -126,6 +151,7 @@ def session_cwd(pid):
 
 def main():
     check = "--check" in sys.argv
+    fix = "--fix" in sys.argv
     quiet = "--quiet" in sys.argv
     me = os.getuid()
     procs = processes()
@@ -215,9 +241,14 @@ def main():
         cmd = p["cmd"]
         if LEAKED_SHELL.search(cmd):
             body = re.search(r"eval '([^']{0,120})", cmd)
-            add("WARN", f"leaked Claude Bash shell pid {p['pid']}, up {human_age(p['age'])}",
-                f"body: {body.group(1) if body else short(cmd)}",
-                f"kill: kill {p['pid']}")
+            body = body.group(1) if body else short(cmd)
+            title = f"leaked Claude Bash shell pid {p['pid']}, up {human_age(p['age'])}"
+            if fix:
+                outcome = kill_leaked_shell(p)
+                add("FIXED" if outcome.startswith(("killed", "gone")) else "WARN",
+                    f"{title}: {outcome}", f"body: {body}")
+            else:
+                add("WARN", title, f"body: {body}", f"kill: kill {p['pid']}")
             continue
         if p["pid"] in managed or cmd.startswith(SYSTEM_PREFIXES) or ".app/Contents/" in cmd or cmd.startswith("/Applications/"):
             continue
@@ -241,7 +272,7 @@ def main():
                         f"{p['rss_mb']} MB", f"cwd {session_cwd(p['pid'])}")
 
     # --- Output ----------------------------------------------------------------------------------
-    order = {"CRIT": 0, "WARN": 1, "INFO": 2}
+    order = {"CRIT": 0, "WARN": 1, "FIXED": 2, "INFO": 3}
     findings.sort(key=lambda f: order[f[0]])
     if not quiet:
         print(header)
@@ -251,9 +282,9 @@ def main():
     if findings:
         print("Findings:")
         for level, title, detail in findings:
-            print(f"  {level:4}  {title}")
+            print(f"  {level:5} {title}")
             for d in detail:
-                print(f"          {d}")
+                print(f"        {d}")
     elif not quiet:
         print("Findings: none")
     if check and any(f[0] in ("CRIT", "WARN") for f in findings):
