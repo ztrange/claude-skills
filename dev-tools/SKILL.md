@@ -2,7 +2,7 @@
 name: dev-tools
 description: >-
   The once-per-repo setup jobs, loaded only when named: `/dev-tools guardrails`, `/dev-tools
-  house-style`, `/dev-tools aws-sso`. No argument lists them.
+  house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`. No argument lists them.
 disable-model-invocation: true
 ---
 
@@ -19,8 +19,9 @@ surface between them for 2 invocations total. So they are reached by argument in
 | `guardrails` | Install or update the git hooks that park the primary clone on `main` and push work into worktrees | `guardrails/SKILL.md` |
 | `house-style` | Bring a repo up to the engineering conventions and write its own `CLAUDE.md` | `house-style/SKILL.md` |
 | `aws-sso` | Migrate `~/.aws/config` onto `sso-session` blocks, then explain where session duration lives | `aws-sso/SKILL.md` |
+| `machine-health` | Install or uninstall the scheduled machine-health agent and the root fseventsd watchdog | `machine-health/SKILL.md` |
 
-Those three paths are symlinks to the real skill directories, which is what keeps this dispatcher
+Those paths are symlinks to the real skill directories, which is what keeps this dispatcher
 free of absolute paths. A relative path *inside* the file you read resolves against the symlink you
 read it through, not against this directory: in `guardrails/SKILL.md`, `references/evidence.md`
 means `guardrails/references/evidence.md`. Follow such a path exactly as written — prefix it with
@@ -29,14 +30,14 @@ the argument's directory, never rewrite it.
 `references/` here is the net under that rule: one symlink per reference file any job names, so a
 path resolved against this directory instead reads the same file rather than erroring into a hunt.
 It holds only while the basenames don't collide — a new reference under any job needs a basename
-unique across all three, then a symlink here.
+unique across all of them, then a symlink here.
 
 Verified: only `<skills root>/<name>/SKILL.md` is registered as a skill, so the `SKILL.md` behind
 each symlink here is read as a file and never loaded as a skill of its own. That is what keeps
 their descriptions out of the always-resident prompt, which is the whole point of this dispatcher.
 
 **No argument, or one not in the table** → print the table and stop. Never pick a job for the user:
-all three write to their machine, and two of them install hooks.
+all of them write to their machine, and two of them install hooks.
 
 **Read the whole file before acting on any of it.** Each fails closed in its own way, and the gates
 live in the prose, not only in the commands.

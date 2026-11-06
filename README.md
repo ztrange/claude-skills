@@ -121,12 +121,19 @@ edits are live — there is no build or install step for day-to-day use.
   week-old sessions, and runaway `fseventsd`/Spotlight — with the `sudo killall` /
   `killall -9 fseventsd` recovery the user runs, since it needs root. Read-only until a yes names
   the pid. [`scripts/snapshot.py`](machine-health/scripts/snapshot.py) does the measuring;
-  `--check` makes it a $0 launchd job via
-  [`scripts/scheduled-check.sh`](machine-health/scripts/scheduled-check.sh), which only notifies
-  and keeps a report when something is WARN or CRIT. macOS only.
+  `--fix` kills leaked Claude shells, the one fix safe to run unattended. macOS only.
+
+- **[`machine-health-schedule`](machine-health-schedule/SKILL.md)** — **on demand**, reached with
+  `/dev-tools machine-health`: install or uninstall the unattended side, both $0 (no model runs).
+  A user LaunchAgent runs `snapshot.py --fix` every 30 min, notifying only on what it can't fix;
+  a root LaunchDaemon restarts `fseventsd` after two consecutive samples at ≥ 80% (TERM, then
+  `-9`), with a 15-minute cooldown so a persistent storm logs instead of looping. The daemon is
+  installed as a root-owned *copy* in `/usr/local/libexec/` — launchd running a root job from a
+  user-writable repo file would hand root to any user process — so editing the watchdog takes a
+  re-install to go live.
 
 - **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
-  `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`. A skill body is already
+  `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`. A skill body is already
   lazy — it isn't in the prompt until it's called — but its `description` is resident in every
   session of every project, and a description is mostly trigger phrases. These three carried 362
   words of trigger surface between them for 2 invocations total, so they moved behind a 24-word

@@ -1,0 +1,8 @@
+Not linked into ~/.claude/skills/ by default, and /sync-config leaves it alone.
+
+This skill does a job that happens once per machine — installing (or uninstalling) the scheduled
+machine-health agent and the root fseventsd watchdog. It is reached by argument instead:
+
+  /dev-tools machine-health
+
+dev-tools/ holds a symlink to this directory. Read dev-tools/SKILL.md for the dispatch table.
