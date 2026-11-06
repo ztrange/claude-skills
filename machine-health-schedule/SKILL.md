@@ -18,8 +18,15 @@ model runs, ~1 s of CPU per check.
 | Agent `com.user.machine-health` | the user | 30 min | `snapshot.py --fix`: kills leaked Claude Bash shells (PPID 1, from `.claude/shell-snapshots/`, > 10 min). Notifies on any remaining WARN/CRIT; kills nothing else | `~/Library/Logs/machine-health/` — `latest.txt`, `fixed.log`, `last-run` |
 | Daemon `com.user.machine-health.fseventsd` | root | 2 min | `fseventsd` ≥ 80% on 2 consecutive 3 s samples → `killall`, then `killall -9` if the pid survives 10 s; then 15 min cooldown, so a storm that persists logs instead of looping | `/var/log/machine-health-fseventsd.log` |
 
-The machine-health skill must already be merged and pulled into the main clone — the agent runs
-`<main clone>/machine-health/scripts/scheduled-check.sh`, never a worktree copy.
+Both pieces run **installed copies**, never the repo: the agent from `~/Library/Application
+Support/machine-health/`, the daemon from `/usr/local/libexec/machine-health/`. The installers copy
+from the main clone, so machine-health must be merged and pulled first. Why copies: macOS privacy
+protection (TCC) blocks launchd jobs from `~/Documents` — the agent pointed at the repo failed with
+exit 126, "Operation not permitted" — and a root job must not run a user-writable file.
+Consequence for both: **a change to `snapshot.py`, `scheduled-check.sh` or
+`fseventsd-watchdog.sh` is live only after re-running its installer** — say so whenever one changes.
+Don't "fix" exit 126 by granting `/bin/sh` Full Disk Access: that opens every protected folder to
+every shell script.
 
 ## Agent — you run it
 
@@ -34,7 +41,8 @@ Verify an install by running it once now rather than waiting 30 min:
 launchctl kickstart -k gui/$(id -u)/com.user.machine-health && sleep 10 && ls -l ~/Library/Logs/machine-health/
 ```
 
-`last-run` with the current time = it ran. Uninstall is verified by the script itself (it fails if
+`last-run` with the current time and `last exit code = 0` in `launchctl print
+gui/$(id -u)/com.user.machine-health` = it ran. Exit 126 = it is pointed at a TCC-protected path. Uninstall is verified by the script itself (it fails if
 the label is still loaded).
 
 ## Daemon — the user runs it
@@ -52,8 +60,7 @@ sudo sh <main clone>/machine-health-schedule/scripts/install-fseventsd-watchdog.
 
 The installer copies the watchdog to `/usr/local/libexec/machine-health/`, root-owned. launchd
 must not run a root job from the repo: any process running as the user could edit that file and
-get root. Consequence: **a change to `fseventsd-watchdog.sh` is live only after re-running the
-installer** — say so whenever that file changes.
+get root.
 
 After the user says it ran, verify read-only:
 

@@ -129,8 +129,9 @@ edits are live — there is no build or install step for day-to-day use.
   a root LaunchDaemon restarts `fseventsd` after two consecutive samples at ≥ 80% (TERM, then
   `-9`), with a 15-minute cooldown so a persistent storm logs instead of looping. The daemon is
   installed as a root-owned *copy* in `/usr/local/libexec/` — launchd running a root job from a
-  user-writable repo file would hand root to any user process — so editing the watchdog takes a
-  re-install to go live.
+  user-writable repo file would hand root to any user process. The agent runs a copy too, in
+  `~/Library/Application Support/`, because macOS privacy protection blocks launchd jobs from
+  `~/Documents` (exit 126). So editing any of the three scripts takes a re-install to go live.
 
 - **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
   `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`. A skill body is already
