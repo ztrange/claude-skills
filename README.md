@@ -113,6 +113,18 @@ edits are live — there is no build or install step for day-to-day use.
   with an open PR are never touched. `wrap-up` closes out *this* session's work; this one sweeps
   everything the previous sessions left behind.
 
+- **[`machine-health`](machine-health/SKILL.md)** — the same idea as `housekeeping`, for the
+  machine instead of the repo: load against cores, memory and swap, and CPU summed per owning
+  Claude session (with its cwd) rather than per process — fifteen pytest workers at 90% each are
+  one session's test run, not fifteen problems. Flags leaked Claude Bash shells (PPID 1, still
+  looping from `.claude/shell-snapshots/`), orphans that aren't launchd jobs, zombies, idle
+  week-old sessions, and runaway `fseventsd`/Spotlight — with the `sudo killall` /
+  `killall -9 fseventsd` recovery the user runs, since it needs root. Read-only until a yes names
+  the pid. [`scripts/snapshot.py`](machine-health/scripts/snapshot.py) does the measuring;
+  `--check` makes it a $0 launchd job via
+  [`scripts/scheduled-check.sh`](machine-health/scripts/scheduled-check.sh), which only notifies
+  and keeps a report when something is WARN or CRIT. macOS only.
+
 - **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
   `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`. A skill body is already
   lazy — it isn't in the prompt until it's called — but its `description` is resident in every

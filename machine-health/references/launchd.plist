@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Template. Replace __SKILL_DIR__ with the MAIN clone's machine-health directory (a worktree
+     path dies when its branch lands), save as
+     ~/Library/LaunchAgents/com.user.machine-health.plist, then:
+       launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.user.machine-health.plist
+     Remove with:
+       launchctl bootout gui/$(id -u)/com.user.machine-health -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.user.machine-health</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/sh</string>
+    <string>__SKILL_DIR__/scripts/scheduled-check.sh</string>
+  </array>
+  <key>StartInterval</key>
+  <integer>1800</integer>
+  <key>Nice</key>
+  <integer>10</integer>
+  <key>ProcessType</key>
+  <string>Background</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/machine-health.err</string>
+</dict>
+</plist>
