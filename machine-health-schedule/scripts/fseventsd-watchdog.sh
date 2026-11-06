@@ -24,8 +24,9 @@ pid=$(pgrep -x "$TARGET" | head -1)
 [ -n "$pid" ] || { echo 0 >"$STATE/strikes"; exit 0; }
 
 # CPU% = cumulative CPU time gained over SAMPLE seconds. Not `top`: under launchd as root on a
-# loaded machine, `top -l 2 -s 3 -pid` hung for 40+ s on its first install and blocked every later
-# run (launchd won't start a job that is still running). `ps -o time=` prints [h:]mm:ss.cc.
+# loaded machine, `top -l 2 -s 3 -pid` took 20-40 s per run and printed no parseable CPU line, so
+# every run logged "could not read CPU" and the watchdog could never strike — blind, not hung.
+# `ps -o time=` prints [h:]mm:ss.cc.
 SAMPLE=${MH_SAMPLE:-5}
 cputime_cs() { ps -o time= -p "$1" | awk -F: '{s=0; for (i=1; i<=NF; i++) s=s*60+$i; printf "%d", s*100}'; }
 c1=$(cputime_cs "$pid"); sleep "$SAMPLE"; c2=$(cputime_cs "$pid")
