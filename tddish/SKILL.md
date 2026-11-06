@@ -7,14 +7,15 @@ description: >-
   the refactor bounded to the files that cycle touched. Use when the user says "tdd", "tddish", "use
   TDD", "test-driven", "test first", "write the test first", "red green refactor", "do this
   test-first", "start with a failing test", or asks for a change to be developed test-first. One
-  agent, one worktree, no subagents, no ledger, no state machine — for the projects where veri's
-  `/tdd` is not installed or not worth its weight.
+  agent, one worktree, no subagents, no state machine — for the projects where veri's `/tdd` is not
+  installed or not worth its weight. When the request names a GitHub issue, it claims the issue with
+  veri's label and ticks a veri-format plan ledger as steps land.
 ---
 
 # tddish — TDD discipline, nothing around it
 
 **One agent does all of it.** You write the test, you write the code, you run the suite. There is no
-conductor, no ledger file, no blind verifier, no bail/revise loop. The rigour lives in the order of
+conductor, no blind verifier, no bail/revise loop. The rigour lives in the order of
 operations and in what each phase is allowed to touch, not in machinery.
 
 **The project wins on convention.** Its runner, its test layout, its naming, its assertion style.
@@ -29,12 +30,35 @@ This skill supplies the loop, never the stack.
 2. **Run it before changing anything.** A red baseline is a finding, not a starting point: report
    which cases fail and ask whether to repair them first. Developing on a red suite means no phase
    below can tell its own failure from the inherited one.
-3. **Work in a worktree and branch**, per the global prompt. Nothing in this skill pushes or merges.
+3. **Work in a worktree and branch**, per the global prompt. Nothing in this skill merges.
+4. **Claim the issue, when the request names one** — before the baseline of item 2. If the issue
+   carries the opt-in label (`$VERI_LABEL`, default `ready-for-agent`), swap it for `taken:<lane>`,
+   `<lane>` being the text after the label's last `:`, or `main` when it has none:
+   ```
+   gh issue edit <n> --remove-label "$label" --add-label "taken:$lane"
+   ```
+   This is what veri's `unlabel-issue.sh` does, so veri's `solvable-issues.sh` stops listing it.
+   `gh` refuses a label the repo does not have yet — create it once with `gh label create
+   "taken:$lane"`. **No opt-in label → no claim**: say so and carry on; it is not this skill's to
+   take, and an issue already `taken:*` by another lane is someone else's run — stop and ask.
 
 ## 1. Plan the change as behavioural steps
 
-Write the steps where the user can see them — the task list, or the draft PR body. **Not a file in
-the repo**; there is no ledger here and nothing reads it back.
+Write the steps where the user can see them — the task list, or the draft PR body.
+
+**When the request names issue `<n>`, the plan is also a ledger**, in veri's format and at veri's
+path, so a real veri run could resume the same branch:
+
+```
+# Plan for #<n> — <issue title>
+
+- [ ] <behaviour, one cycle's worth> ⟦criterion k⟧
+- [ ] <a gap step no acceptance criterion covers>
+```
+
+`k` is the 1-based position of the checkbox in the issue's `## Acceptance criteria` it serves; a
+gap step carries none. Commit it before the first Red: `plan: scope #<n> into <k> steps (#<n>)`.
+`.tdd/` is often gitignored — `git add -f .tdd/issue-<n>.md`. No issue → no ledger.
 
 - **Each step is one externally observable behaviour**, phrased as the criterion a test will pin:
   "rejects a payload whose `amount` is negative", not "add validation" and not "write the validator
@@ -95,6 +119,10 @@ the repo**; there is no ledger here and nothing reads it back.
 - **Commit here, one commit per step**, with the criterion in the subject — `feat: rejects a
   negative amount`. This is the step's atomic unit: before this commit the step does not exist, and
   after it the behaviour is pinned.
+- **With a ledger, tick the step in this same commit** (`- [ ]` → `- [x]` on its line), never in a
+  commit of its own. Once every step carrying `⟦criterion k⟧` is ticked, tick the k-th checkbox under
+  the issue's `## Acceptance criteria` too: read the body with `gh issue view <n> --json body -q
+  .body`, flip that one box, write it back with `gh issue edit <n> --body-file -`.
 
 ### 🧹 Refactor — bounded, behaviour-preserving, separately committed
 
@@ -120,16 +148,20 @@ Then back to the next step's Red.
 
 - **Run the full suite**, not the narrow one, before pushing. Report the counts.
 - **A step you dropped, split or could not test is named in the PR body** with why — the plan was
-  visible, so its deviations are too.
+  visible, so its deviations are too. With a ledger, the same goes for an unticked line.
 - Branch → push → draft PR, per the global prompt. **This skill never merges.**
 
 ## What it deliberately does not do
 
 veri's `/tdd` (`ztrange/veri`, `skills/tdd/`) does all of this and carries, additionally: a
 conductor process driving subagent leaves, blind verification of every phase by an agent that never
-saw the author's reasoning, a committed ledger as source of truth, an event log with per-step cost
-budgets, a bounded revise loop with bail causes, and GitHub-issue orchestration. **None of that is
-here.** That machinery buys verification you cannot rubber-stamp and a run that survives its own
+saw the author's reasoning, the ledger as the run's source of truth (resume, refactor-pending
+marks), an event log with per-step cost budgets, a bounded revise loop with bail causes, and
+GitHub-issue orchestration — issue comments per phase, a WIP draft PR opened at plan time, metrics.
+**None of that is here.** Borrowed, and only when the request names an issue: the claim label and
+the ticked ledger — written for the user and for a later veri run, never read back by this skill.
+
+That machinery buys verification you cannot rubber-stamp and a run that survives its own
 context; it costs a per-repo install, a worktree per issue and a lot of leaf-seconds.
 
 So the honest trade this skill makes: **the agent checks its own work.** The prediction step in Red
