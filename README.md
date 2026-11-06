@@ -49,15 +49,16 @@ edits are live — there is no build or install step for day-to-day use.
   and never lets a low budget excuse skipping a confirmation gate.
 
 - **[`tddish`](tddish/SKILL.md)** — TDD discipline with nothing around it: one agent, one worktree,
-  no subagents and no ledger. Find the suite and prove it green *before* starting (a red baseline is
+  no subagents. Find the suite and prove it green *before* starting (a red baseline is
   a finding, not a starting point), plan the change as observable behaviours, then Red → Green →
   Refactor per step. The one borrowed trick that earns its line is predicting the red before running
   it — a failure you called in advance is much harder to rationalize than one you explain
   afterwards, and a divergence means the model of the code is wrong, not that the test needs
   patching. Each phase is defined by what it may *not* touch: no production code in Red, no test
   edit in Green, no test edit and no new generality in Refactor, which is bounded to the files that
-  cycle touched. veri's `/tdd` is the same loop plus blind verification, a committed ledger, cost
-  budgets and issue orchestration; this is for every project where that install isn't worth its
+  cycle touched. Given a GitHub issue, it claims it with veri's `taken:<lane>` label and ticks a
+  veri-format plan ledger (`.tdd/issue-<n>.md`) and the issue's criteria as steps land. veri's
+  `/tdd` is the same loop plus blind verification, cost budgets and full issue orchestration; this is for every project where that install isn't worth its
   weight, and it says out loud that the agent is checking its own work.
 
 - **[`wrap-up`](wrap-up/SKILL.md)** — close out finished work: land the change, clean scratch
