@@ -2,7 +2,8 @@
 name: dev-tools
 description: >-
   The once-per-repo setup jobs, loaded only when named: `/dev-tools guardrails`, `/dev-tools
-  house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`. No argument lists them.
+  house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`,
+  `/dev-tools machine-health-schedule`. No argument lists them.
 disable-model-invocation: true
 ---
 
@@ -19,7 +20,8 @@ surface between them for 2 invocations total. So they are reached by argument in
 | `guardrails` | Install or update the git hooks that park the primary clone on `main` and push work into worktrees | `guardrails/SKILL.md` |
 | `house-style` | Bring a repo up to the engineering conventions and write its own `CLAUDE.md` | `house-style/SKILL.md` |
 | `aws-sso` | Migrate `~/.aws/config` onto `sso-session` blocks, then explain where session duration lives | `aws-sso/SKILL.md` |
-| `machine-health` | Install or uninstall the scheduled machine-health agent and the root fseventsd watchdog | `machine-health/SKILL.md` |
+| `machine-health` | Check this Mac for undue hardware use and kill what leaked — run it when the scheduled agent notifies | `machine-health/SKILL.md` |
+| `machine-health-schedule` | Install or uninstall the scheduled machine-health agent and the root fseventsd watchdog | `machine-health-schedule/SKILL.md` |
 
 Those paths are symlinks to the real skill directories, which is what keeps this dispatcher
 free of absolute paths. A relative path *inside* the file you read resolves against the symlink you

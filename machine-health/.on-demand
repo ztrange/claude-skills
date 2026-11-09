@@ -1,0 +1,11 @@
+Not linked into ~/.claude/skills/ by default, and /sync-config leaves it alone.
+
+The scheduled agent (machine-health-schedule) now does this skill's routine work unattended: it
+runs snapshot.py --fix every 30 min and notifies on anything it can't fix. The interactive check
+is only needed when that notification fires, so its trigger-heavy description no longer earns a
+place in every session's prompt. It is reached by argument instead:
+
+  /dev-tools machine-health
+
+dev-tools/ holds a symlink to this directory. Read dev-tools/SKILL.md for the dispatch table.
+The agent runs a copy of scripts/, so unlinking this skill does not affect it.

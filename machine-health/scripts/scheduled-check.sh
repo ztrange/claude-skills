@@ -25,7 +25,7 @@ grep '^  FIXED' "$report" | sed "s/^/$(date '+%Y-%m-%d %H:%M') /" >>"$logdir/fix
 if [ "$status" != 0 ]; then
   first=$(grep -m1 -E '^  (CRIT|WARN)' "$report" | sed 's/^ *//; s/"/\\"/g')
   [ -n "$first" ] || first="snapshot failed (exit $status); see latest.txt"
-  /usr/bin/osascript -e "display notification \"$first\" with title \"machine-health\" subtitle \"run /machine-health for the full picture\""
+  /usr/bin/osascript -e "display notification \"$first\" with title \"machine-health\" subtitle \"run /dev-tools machine-health for the full picture\""
 fi
 # Keep the newest 50 reports; touches nothing outside $logdir.
 ls -1t "$logdir"/20*.txt 2>/dev/null | tail -n +51 | while IFS= read -r old; do rm -f "$old"; done

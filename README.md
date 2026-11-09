@@ -114,7 +114,9 @@ edits are live — there is no build or install step for day-to-day use.
   with an open PR are never touched. `wrap-up` closes out *this* session's work; this one sweeps
   everything the previous sessions left behind.
 
-- **[`machine-health`](machine-health/SKILL.md)** — the same idea as `housekeeping`, for the
+- **[`machine-health`](machine-health/SKILL.md)** — **on demand**, reached with
+  `/dev-tools machine-health`, since the scheduled agent below does its routine work unattended
+  and the check is only needed when that agent notifies. The same idea as `housekeeping`, for the
   machine instead of the repo: load against cores, memory and swap, and CPU summed per owning
   Claude session (with its cwd) rather than per process — fifteen pytest workers at 90% each are
   one session's test run, not fifteen problems. Flags leaked Claude Bash shells (PPID 1, still
@@ -125,7 +127,7 @@ edits are live — there is no build or install step for day-to-day use.
   `--fix` kills leaked Claude shells, the one fix safe to run unattended. macOS only.
 
 - **[`machine-health-schedule`](machine-health-schedule/SKILL.md)** — **on demand**, reached with
-  `/dev-tools machine-health`: install or uninstall the unattended side, both $0 (no model runs).
+  `/dev-tools machine-health-schedule`: install or uninstall the unattended side, both $0 (no model runs).
   A user LaunchAgent runs `snapshot.py --fix` every 30 min, notifying only on what it can't fix;
   a root LaunchDaemon restarts `fseventsd` after two consecutive samples at ≥ 80% (TERM, then
   `-9`), with a 15-minute cooldown so a persistent storm logs instead of looping. The daemon is
@@ -135,7 +137,8 @@ edits are live — there is no build or install step for day-to-day use.
   `~/Documents` (exit 126). So editing any of the three scripts takes a re-install to go live.
 
 - **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
-  `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`. A skill body is already
+  `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`,
+  `/dev-tools machine-health-schedule`. A skill body is already
   lazy — it isn't in the prompt until it's called — but its `description` is resident in every
   session of every project, and a description is mostly trigger phrases. These three carried 362
   words of trigger surface between them for 2 invocations total, so they moved behind a 24-word

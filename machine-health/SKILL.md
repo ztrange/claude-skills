@@ -80,6 +80,6 @@ A finding you couldn't measure — e.g. `lsof` returned no cwd — says so.
 
 Installing or removing the unattended side — a 30-min user agent running `--fix`, and a root
 watchdog that restarts a pegged `fseventsd` — is a once-per-machine job: `/dev-tools
-machine-health`. When it is installed, its findings are in `~/Library/Logs/machine-health/`
+machine-health-schedule`. When it is installed, its findings are in `~/Library/Logs/machine-health/`
 (`latest.txt`, `fixed.log`) and `/var/log/machine-health-fseventsd.log` — read them as part of §1
 when the user asks what happened while they were away.
