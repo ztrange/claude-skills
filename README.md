@@ -48,8 +48,9 @@ edits are live — there is no build or install step for day-to-day use.
   running dry usually get backwards. Cuts breadth, not the check that stops broken work landing,
   and never lets a low budget excuse skipping a confirmation gate.
 
-- **[`tddish`](tddish/SKILL.md)** — TDD discipline with nothing around it: one agent, one worktree,
-  no subagents. Find the suite and prove it green *before* starting (a red baseline is
+- **[`tddish`](tddish/SKILL.md)** — TDD discipline with nothing around it: one worktree, no state
+  machine, and every suite run and cycle delegated to a subagent (per `delegate`) so test output
+  never grows the main context; cycle agents commit locally, the main thread pushes. Find the suite and prove it green *before* starting (a red baseline is
   a finding, not a starting point), plan the change as observable behaviours, then Red → Green →
   Refactor per step. The one borrowed trick that earns its line is predicting the red before running
   it — a failure you called in advance is much harder to rationalize than one you explain
