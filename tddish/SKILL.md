@@ -7,19 +7,62 @@ description: >-
   the refactor bounded to the files that cycle touched. Use when the user says "tdd", "tddish", "use
   TDD", "test-driven", "test first", "write the test first", "red green refactor", "do this
   test-first", "start with a failing test", or asks for a change to be developed test-first. One
-  agent, one worktree, no subagents, no state machine — for the projects where veri's `/tdd` is not
-  installed or not worth its weight. When the request names a GitHub issue, it claims the issue with
+  worktree, no state machine; the main thread orchestrates per `/delegate` and every suite run and
+  cycle happens in a subagent, so test output never grows the main context — for the projects where
+  veri's `/tdd` is not installed or not worth its weight. When the request names a GitHub issue, it claims the issue with
   veri's label and ticks a veri-format plan ledger as steps land.
 ---
 
 # tddish — TDD discipline, nothing around it
 
-**One agent does all of it.** You write the test, you write the code, you run the suite. There is no
-conductor, no blind verifier, no bail/revise loop. The rigour lives in the order of
-operations and in what each phase is allowed to touch, not in machinery.
+**The rigour lives in the order of operations and in what each phase is allowed to touch, not in
+machinery.** There is no blind verifier and no bail/revise loop.
 
 **The project wins on convention.** Its runner, its test layout, its naming, its assertion style.
 This skill supplies the loop, never the stack.
+
+## Who does what — always through `delegate`
+
+Load the `delegate` skill and follow its contract for every subagent below. Test output, file dumps
+and build logs are what fills a TDD session's context; none of it belongs in the main thread.
+
+| Main thread | Subagent |
+|---|---|
+| Picks the test command (§0.1), claims the issue (§0.4), writes the plan and ledger (§1) | Runs the baseline (§0.2) and the closing full suite (§3), returns counts and failing case names |
+| Hands one step to a cycle agent, reads its report, decides go/split/drop/stop | Runs one step's Red → Green → Refactor (§2) in the worktree |
+| Verifies narrowly: `git log --oneline -3`, `git show --stat HEAD`, the predicted vs observed red quoted in the report | Reads the code, writes the test and the production code, runs the suites |
+| Ticks the issue's acceptance criteria, pushes, opens the PR | — |
+
+- **Always, even for a one-line step.** This overrides `delegate`'s "under ~3 cheap tool calls, do
+  it yourself": a run of small steps done inline is exactly how the main context grows unnoticed.
+- **One cycle agent per step, sequentially, in the worktree** — no `isolation`, no fan-out. Two
+  cycles in parallel would write the same files and break "one writer per worktree". While one
+  runs, the main thread does not edit.
+- **The cycle agent commits locally, never pushes.** This overrides `delegate`'s "a subagent does
+  not commit": the step commit and each refactor commit are the cycle's atomic units, and routing
+  each one back through the main thread costs a round trip per transform. Push and PR stay here.
+- **Same step, same agent.** A split, a re-prediction or a "go ahead with Refactor" goes back by
+  `SendMessage` to the agent that already holds the test in its context, not to a fresh one.
+- **Model**: the cycle agent inherits the session's (it writes code you will not re-read); the
+  baseline and full-suite runners take `model: "haiku"` (they only count).
+
+The cycle agent's prompt carries, pasted: the repo and worktree path, the step's criterion verbatim,
+the narrow and full test commands, the ledger path and line if any, the commit-subject convention,
+and §2 of this file by path (`~/.claude/skills/tddish/SKILL.md`, "The cycle") as its rules. Its
+return contract, under 20 lines:
+
+```
+step: <criterion>
+red: predicted <failure|error: message> / observed <failure|error: message> — match|diverged
+green: <covering suites run> → <pass/fail counts>
+commits: <sha subject> per commit, step commit first, refactor commits after
+reverted: <transform, why> or none
+owed: <overfit noted for a later step> or none
+stop: <why the user is needed> or none
+```
+
+A `stop`, a `diverged` it could not resolve, or a red that passed comes back to the main thread
+as a decision — the agent does not drop, split or re-phrase a step on its own.
 
 ## 0. Before the first cycle
 
@@ -27,7 +70,8 @@ This skill supplies the loop, never the stack.
    first non-empty line, a test command stated in the repo's `CLAUDE.md`, then the obvious one from
    the manifest (`package.json` scripts, `Makefile`, `pyproject.toml`). **Nothing matched → ask.** A
    guessed command that runs a subset looks exactly like a green suite.
-2. **Run it before changing anything.** A red baseline is a finding, not a starting point: report
+2. **Run it before changing anything**, in a subagent that returns counts and the names of failing
+   cases only. A red baseline is a finding, not a starting point: report
    which cases fail and ask whether to repair them first. Developing on a red suite means no phase
    below can tell its own failure from the inherited one.
 3. **Work in a worktree and branch**, per the global prompt. Nothing in this skill merges.
@@ -69,6 +113,8 @@ gap step carries none. Commit it before the first Red: `plan: scope #<n> into <k
   work, replace the step with the smaller ones, say so, continue.
 
 ## 2. The cycle — per step, in this order
+
+This section is the cycle agent's rulebook; "you" below is that agent.
 
 ### 🔴 Red — one failing test, no production code
 
@@ -120,8 +166,9 @@ gap step carries none. Commit it before the first Red: `plan: scope #<n> into <k
   negative amount`. This is the step's atomic unit: before this commit the step does not exist, and
   after it the behaviour is pinned.
 - **With a ledger, tick the step in this same commit** (`- [ ]` → `- [x]` on its line), never in a
-  commit of its own. Once every step carrying `⟦criterion k⟧` is ticked, tick the k-th checkbox under
-  the issue's `## Acceptance criteria` too: read the body with `gh issue view <n> --json body -q
+  commit of its own. Once every step carrying `⟦criterion k⟧` is ticked, the main thread — not the
+  cycle agent, since it writes to GitHub — ticks the k-th checkbox under the issue's `## Acceptance
+  criteria` too: read the body with `gh issue view <n> --json body -q
   .body`, flip that one box, write it back with `gh issue edit <n> --body-file -`.
 
 ### 🧹 Refactor — bounded, behaviour-preserving, separately committed
@@ -146,7 +193,8 @@ Then back to the next step's Red.
 
 ## 3. Closing the change
 
-- **Run the full suite**, not the narrow one, before pushing. Report the counts.
+- **Run the full suite**, not the narrow one, before pushing — in a subagent, counts only. Report
+  the counts.
 - **A step you dropped, split or could not test is named in the PR body** with why — the plan was
   visible, so its deviations are too. With a ledger, the same goes for an unticked line.
 - Branch → push → draft PR, per the global prompt. **This skill never merges.**
@@ -164,7 +212,10 @@ the ticked ledger — written for the user and for a later veri run, never read 
 That machinery buys verification you cannot rubber-stamp and a run that survives its own
 context; it costs a per-repo install, a worktree per issue and a lot of leaf-seconds.
 
-So the honest trade this skill makes: **the agent checks its own work.** The prediction step in Red
+The subagents here are not that: the main thread delegates to keep its context small, not to get
+an independent check, and it hands each cycle agent the plan it wrote.
+
+So the honest trade this skill makes: **the cycle agent checks its own work.** The prediction step in Red
 is the cheap stand-in — a red you called in advance is harder to fool yourself with than one you
 rationalize afterwards — and it is not equivalent. When the change is load-bearing enough that
 self-verification is not good enough, use veri, or ask for a second opinion through `delegate`
