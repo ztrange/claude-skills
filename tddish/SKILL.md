@@ -86,6 +86,12 @@ as a decision — the agent does not drop, split or re-phrase a step on its own.
    "taken:$lane"`. **No opt-in label → no claim**: say so and carry on; it is not this skill's to
    take, and an issue already `taken:*` by another lane is someone else's run — stop and ask.
 
+   **`taken:<lane>` means in development — claim when that issue's baseline starts, never ahead.**
+   Under a concurrency cap, an issue waiting for a slot stays on the opt-in label; "claim them all"
+   means take each as a slot frees. An issue whose PR waits to merge keeps `taken:<lane>` until the
+   merge closes it, but does not count against the cap. Release an unstarted claim with
+   `gh issue edit <n> --remove-label "taken:$lane" --add-label "$label"`.
+
 ## 1. Plan the change as behavioural steps
 
 Write the steps where the user can see them — the task list, or the draft PR body.
