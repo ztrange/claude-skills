@@ -83,6 +83,16 @@ edits are live — there is no build or install step for day-to-day use.
   check looks like — then ready a draft, merge, and clean up branch, primary clone and worktree,
   each only behind an explicit `state == MERGED` check, since deleting a PR's head branch closes it.
 
+- **[`canva-deck`](canva-deck/SKILL.md)** — a brief becomes a flashy-but-tasteful Canva deck in
+  three gated stages, each ending in a stop for edits: the full text of every slide; prototypes
+  built as a native-shape `.pptx` (so text stays editable in Canva) and screenshotted from an HTML
+  preview; then a *brand-new* Canva design, imported and given one page animation per slide in
+  Claude in Chrome. Animations live in the slides' speaker notes until stage 3, because Canva drops
+  PowerPoint animations on import. [`scripts/deck_kit.py`](canva-deck/scripts/deck_kit.py) takes
+  the brand (font, colours, SVG/PNG logo) as a JSON file;
+  [`references/example_build.py`](canva-deck/references/example_build.py) shows five layout
+  patterns to copy per run. Keynote is out: its AppleScript export hangs.
+
 - **[`setup-git-guardrail`](setup-git-guardrail/SKILL.md)** — **on demand**, reached with
   `/dev-tools guardrails`. Make the rules enforceable instead of
   remembered: a `reference-transaction` hook that refuses commits on `main` even under

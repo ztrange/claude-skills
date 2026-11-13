@@ -1,0 +1,14 @@
+{
+  "font": "Montserrat",
+  "colors": {
+    "primary": "003896",
+    "deep": "001F5C",
+    "accent": "9CD41C",
+    "ink": "1E1E1E",
+    "muted": "6B7280",
+    "pale": "EEF3FB",
+    "soft": "B9CCEE",
+    "white": "FFFFFF"
+  },
+  "logo": null
+}
