@@ -65,7 +65,7 @@ fi
 now=$(date +%s)
 last=$(cat "$STATE/last-restart" 2>/dev/null || echo 0)
 if [ $((now - last)) -lt "$COOLDOWN" ]; then
-  log "in cooldown ($((now - last))s since last restart); not restarting. The storm's source is still running."
+  log "in cooldown ($((now - last))s since last restart); not restarting despite $why"
   exit 0
 fi
 
