@@ -55,6 +55,12 @@ Then re-run `ps -p <pid>` and say gone or still alive. `-9` only after a TERM wa
 
 ## 3. Runaway fseventsd — the one that has wedged this machine
 
+It fails two ways, and the snapshot flags each: **CPU** (≥ 40% WARN, ≥ 80% CRIT — a file-event
+storm) and **memory** (footprint ≥ 1 GB WARN, ≥ 4 GB CRIT — a leak; a healthy one is a few MB).
+The leak runs at ordinary CPU and shows only as swap filling up: on 2026-11-15 it reached 27 GB
+after 6 days, 26 GB of it compressed or swapped, while `ps` RSS read 560 MB. Memory is read as
+`top`'s MEM for that reason.
+
 fseventsd runs as root and launchd respawns it, so restarting it is safe but needs `sudo`, which
 you don't have. Give the user these, in order — the second only if the first didn't take:
 

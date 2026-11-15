@@ -131,7 +131,8 @@ edits are live — there is no build or install step for day-to-day use.
   Claude session (with its cwd) rather than per process — fifteen pytest workers at 90% each are
   one session's test run, not fifteen problems. Flags leaked Claude Bash shells (PPID 1, still
   looping from `.claude/shell-snapshots/`), orphans that aren't launchd jobs, zombies, idle
-  week-old sessions, and runaway `fseventsd`/Spotlight — with the `sudo killall` /
+  week-old sessions, and runaway `fseventsd` (by CPU, and by memory footprint for the leak that
+  shows only as swap filling up)/Spotlight — with the `sudo killall` /
   `killall -9 fseventsd` recovery the user runs, since it needs root. Read-only until a yes names
   the pid. [`scripts/snapshot.py`](machine-health/scripts/snapshot.py) does the measuring;
   `--fix` kills leaked Claude shells, the one fix safe to run unattended. macOS only.
@@ -139,7 +140,8 @@ edits are live — there is no build or install step for day-to-day use.
 - **[`machine-health-schedule`](machine-health-schedule/SKILL.md)** — **on demand**, reached with
   `/dev-tools machine-health-schedule`: install or uninstall the unattended side, both $0 (no model runs).
   A user LaunchAgent runs `snapshot.py --fix` every 30 min, notifying only on what it can't fix;
-  a root LaunchDaemon restarts `fseventsd` after two consecutive samples at ≥ 80% (TERM, then
+  a root LaunchDaemon restarts `fseventsd` after two consecutive samples at ≥ 80% CPU, or one
+  reading of a ≥ 4 GB footprint (TERM, then
   `-9`), with a 15-minute cooldown so a persistent storm logs instead of looping. The daemon is
   installed as a root-owned *copy* in `/usr/local/libexec/` — launchd running a root job from a
   user-writable repo file would hand root to any user process. The agent runs a copy too, in

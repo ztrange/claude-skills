@@ -23,6 +23,12 @@ FREE_WARN, FREE_CRIT = 20, 10            # memory_pressure "free percentage"
 SWAP_WARN = 0.75                         # fraction of swap in use
 DAEMON_CPU_WARN = 40                     # fseventsd, mds*, mdworker*, sysmond
 FSEVENTSD_CRIT = 80                      # the one that has wedged the machine before
+# fseventsd memory, as top's MEM: the physical footprint, which counts pages compressed or swapped
+# out. ps RSS does not — on 2026-11-15 a leaked fseventsd showed 560 MB RSS and 27 GB MEM (26 GB of
+# it compressed), filled swap on a 24 GB Mac at ~20% CPU, and no CPU threshold fired. A healthy one
+# is a few MB.
+FSEVENTSD_MEM_WARN_MB = int(os.environ.get("MH_FSEVENTSD_MEM_WARN_MB", 1024))
+FSEVENTSD_MEM_CRIT_MB = int(os.environ.get("MH_FSEVENTSD_MEM_CRIT_MB", 4096))
 TREE_CPU_WARN = 400                      # one session tree using > 4 cores
 APP_CPU_WARN = 80                        # Claude.app main process
 ORPHAN_MIN_AGE = int(os.environ.get("MH_ORPHAN_MIN_AGE", 600))  # s; younger PPID-1 ones are mid-handoff
@@ -64,7 +70,8 @@ def processes():
             continue
         pid, ppid, uid, stat, rss, etime, cmd = f
         procs[int(pid)] = dict(pid=int(pid), ppid=int(ppid), uid=int(uid), stat=stat,
-                               rss_mb=int(rss) // 1024, age=etime_seconds(etime), cmd=cmd, cpu=0.0)
+                               rss_mb=int(rss) // 1024, age=etime_seconds(etime), cmd=cmd, cpu=0.0,
+                               mem_mb=None)
     # Second sample of `top -l 2` is the instantaneous one; the first is since-boot.
     top = run(["top", "-l", "2", "-s", "2", "-o", "cpu", "-n", "200", "-stats", "pid,cpu"])
     sample = top.split("PID")[-1].splitlines()[1:]
@@ -74,7 +81,33 @@ def processes():
             p = procs.get(int(f[0]))
             if p:
                 p["cpu"] = float(f[1])
+    # Footprint of the watched daemons only: `-o cpu -n 200` can leave out a daemon that leaks
+    # memory while idle, which is exactly the case this exists for. One sample suffices; MEM is
+    # instantaneous, not a rate.
+    for p in procs.values():
+        if p["cmd"].split()[0].rsplit("/", 1)[-1] == "fseventsd":
+            p["mem_mb"] = top_mem_mb(p["pid"])
     return procs
+
+
+def top_mem_mb(pid):
+    """top's MEM column (physical footprint, compressed and swapped pages included) in MB, or
+    None when top printed nothing parseable. It reads root-owned processes without root."""
+    out = run(["top", "-l", "1", "-pid", str(pid), "-stats", "pid,mem"])
+    for line in out.split("PID")[-1].splitlines()[1:]:
+        f = line.split()
+        if len(f) == 2 and f[0] == str(pid):
+            return mem_to_mb(f[1])
+    return None
+
+
+def mem_to_mb(s):
+    """'27G', '1004M+', '4592K-', '512B' -> MB. None for anything else."""
+    m = re.fullmatch(r"([\d.]+)([BKMGT])[+-]?", s)
+    if not m:
+        return None
+    scale = {"B": 1 / 1048576, "K": 1 / 1024, "M": 1, "G": 1024, "T": 1048576}[m.group(2)]
+    return float(m.group(1)) * scale
 
 
 def short(cmd, n=110):
@@ -225,6 +258,18 @@ def main():
                 add("WARN", f"{name} at {p['cpu']:.0f}% CPU (pid {p['pid']})",
                     "Spotlight indexing churn; exclude the busy tree in System Settings → "
                     "Spotlight → Search Privacy")
+
+    for p in procs.values():
+        if p["cmd"].split()[0].rsplit("/", 1)[-1] != "fseventsd" or p["mem_mb"] is None:
+            continue
+        if p["mem_mb"] >= FSEVENTSD_MEM_WARN_MB:
+            level = "CRIT" if p["mem_mb"] >= FSEVENTSD_MEM_CRIT_MB else "WARN"
+            add(level, f"fseventsd holds {p['mem_mb'] / 1024:.1f} GB (top MEM, pid {p['pid']}, "
+                       f"up {human_age(p['age'])}); it is leaking, and the swap it fills slows "
+                       "everything",
+                "recover (root, launchd respawns it): sudo killall fseventsd; "
+                "sleep 10; pgrep -x fseventsd && sudo killall -9 fseventsd",
+                "it does not shrink on its own; restarting is the only release")
 
     app = [p for p in procs.values()
            if p["cmd"].startswith("/Applications/Claude.app/Contents/MacOS/Claude")]
