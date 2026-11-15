@@ -3,7 +3,7 @@ name: machine-health-schedule
 description: >-
   Install or uninstall the unattended side of machine-health on this Mac: a per-user LaunchAgent
   that checks every 30 min and kills leaked Claude Bash shells, and a root LaunchDaemon that
-  restarts a pegged fseventsd. Reached with `/dev-tools machine-health`.
+  restarts a pegged or leaking fseventsd. Reached with `/dev-tools machine-health`.
 disable-model-invocation: true
 ---
 
@@ -16,7 +16,7 @@ model runs, ~1 s of CPU per check.
 | Piece | Runs as | Every | Does unattended | Log |
 |---|---|---|---|---|
 | Agent `com.user.machine-health` | the user | 30 min | `snapshot.py --fix`: kills leaked Claude Bash shells (PPID 1, from `.claude/shell-snapshots/`, > 10 min). Notifies on any remaining WARN/CRIT; kills nothing else | `~/Library/Logs/machine-health/` — `latest.txt`, `fixed.log`, `last-run` |
-| Daemon `com.user.machine-health.fseventsd` | root | 2 min | `fseventsd` ≥ 80% on 2 consecutive 5 s samples (`ps` CPU time, not `top`) → `killall`, then `killall -9` if the pid survives 10 s; then 15 min cooldown, so a storm that persists logs instead of looping | `/var/log/machine-health-fseventsd.log` |
+| Daemon `com.user.machine-health.fseventsd` | root | 2 min | `fseventsd` ≥ 80% on 2 consecutive 5 s samples (`ps` CPU time, not `top`), or a footprint ≥ 4 GB on one reading (`top -l 1` MEM, which counts compressed and swapped pages; `ps` RSS does not) → `killall`, then `killall -9` if the pid survives 10 s; then 15 min cooldown, so a storm that persists logs instead of looping | `/var/log/machine-health-fseventsd.log` |
 
 Both pieces run **installed copies**, never the repo: the agent from `~/Library/Application
 Support/machine-health/`, the daemon from `/usr/local/libexec/machine-health/`. The installers copy
