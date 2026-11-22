@@ -1,0 +1,8 @@
+{
+  "name": "Mine",
+  "base": "dark",
+  "overrides": {
+    "userMessageBackground": "#6b2a35",
+    "briefLabelYou": "#fda4af"
+  }
+}
