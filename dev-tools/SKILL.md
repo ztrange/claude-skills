@@ -3,7 +3,8 @@ name: dev-tools
 description: >-
   The once-per-repo setup jobs, loaded only when named: `/dev-tools guardrails`, `/dev-tools
   house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`,
-  `/dev-tools machine-health-schedule`. No argument lists them.
+  `/dev-tools machine-health-schedule`, `/dev-tools kitty`, `/dev-tools claude-cli`. No argument
+  lists them.
 disable-model-invocation: true
 ---
 
@@ -22,6 +23,8 @@ surface between them for 2 invocations total. So they are reached by argument in
 | `aws-sso` | Migrate `~/.aws/config` onto `sso-session` blocks, then explain where session duration lives | `aws-sso/SKILL.md` |
 | `machine-health` | Check this Mac for undue hardware use and kill what leaked — run it when the scheduled agent notifies | `machine-health/SKILL.md` |
 | `machine-health-schedule` | Install or uninstall the scheduled machine-health agent and the root fseventsd watchdog | `machine-health-schedule/SKILL.md` |
+| `kitty` | Install kitty as configured here: app, font, config, theme, and the zsh wrapper its Claude keys need | `kitty/SKILL.md` |
+| `claude-cli` | Install Claude Code's mods, status line, theme, keybindings and settings as configured here | `claude-cli/SKILL.md` |
 
 Those paths are symlinks to the real skill directories, which is what keeps this dispatcher
 free of absolute paths. A relative path *inside* the file you read resolves against the symlink you

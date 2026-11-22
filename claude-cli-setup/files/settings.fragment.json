@@ -1,0 +1,18 @@
+{
+  "env": { "CLAUDE_CODE_PLUGIN_DIRS": "~/mods/copy-code" },
+  "permissions": { "allow": ["Bash(gh pr *)"] },
+  "model": "opus",
+  "modelSettings": {
+    "claude-opus-5": { "effortLevel": "medium" },
+    "claude-opus-5-5": { "effortLevel": "medium", "autoCompactWindow": 150000 }
+  },
+  "statusLine": { "type": "command", "command": "sh __HOME__/.claude/statusline-command.sh" },
+  "tui": "fullscreen",
+  "timeFormat": "%H:%M GMT%z",
+  "theme": "custom:mine",
+  "skipDangerousModePermissionPrompt": true,
+  "remoteControlAtStartup": true,
+  "agentPushNotifEnabled": true,
+  "awaySummaryEnabled": false,
+  "idleCompaction": true
+}

@@ -134,9 +134,23 @@ edits are live — there is no build or install step for day-to-day use.
   `~/Library/Application Support/`, because macOS privacy protection blocks launchd jobs from
   `~/Documents` (exit 126). So editing any of the three scripts takes a re-install to go live.
 
+- **[`kitty-setup`](kitty-setup/SKILL.md)** — **on demand**, `/dev-tools kitty`: install kitty on
+  a Mac exactly as configured here. Homebrew casks for kitty and JetBrainsMono Nerd Font, then
+  [`files/kitty.conf`](kitty-setup/files/kitty.conf) — the ~25 lines we changed out of kitty's
+  3,650-line commented template, each with why — plus the Dracula theme and the zsh `claude()`
+  wrapper that sets kitty's `in_claude` user var, without which the Claude-only `cmd+v` image
+  paste and `cmd+backspace` clear-input maps never fire. Copies, not symlinks (kitty's theme
+  kitten rewrites `kitty.conf` in place); replaced files are kept as `.bak-<timestamp>`.
+
+- **[`claude-cli-setup`](claude-cli-setup/SKILL.md)** — **on demand**, `/dev-tools claude-cli`:
+  make Claude Code run as it does here — the `copy-code` mod (a Copy button per code block), the
+  status line, the `custom:mine` theme, `cmd+z` undo, and the `settings.json` keys that wire them,
+  deep-merged so other keys survive. Carries `skipDangerousModePermissionPrompt: true`, which the
+  skill says out loud before running; leaves `autoMode` behind as project-specific.
+
 - **[`dev-tools`](dev-tools/SKILL.md)** — the dispatcher for the once-only jobs, by argument:
   `/dev-tools guardrails`, `/dev-tools house-style`, `/dev-tools aws-sso`, `/dev-tools machine-health`,
-  `/dev-tools machine-health-schedule`. A skill body is already
+  `/dev-tools machine-health-schedule`, `/dev-tools kitty`, `/dev-tools claude-cli`. A skill body is already
   lazy — it isn't in the prompt until it's called — but its `description` is resident in every
   session of every project, and a description is mostly trigger phrases. These three carried 362
   words of trigger surface between them for 2 invocations total, so they moved behind a 24-word
