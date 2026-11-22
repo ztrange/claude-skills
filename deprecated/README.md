@@ -17,3 +17,10 @@ Skills that have moved elsewhere. Kept for history; not installed.
   own sections, which is what `veri` does in `specs/utility-skills.md` (PRD 011, section A:
   Landed / Running / Queue / Waiting). Last invoked 2026-09-13, twelve days after the global rule
   made it redundant, after 40 invocations. This copy is a frozen snapshot — do not edit it.
+
+- **tddish** — superseded by veri's [`vish`](https://github.com/ztrange/veri/tree/main/skills/vish)
+  (2026-11-22), installed user-level next to `vinstall`. Same loop — baseline green first, predicted
+  red, Red → Green → Refactor per step through subagents, veri's issue label and plan ledger — and
+  the same trigger phrases ("tdd", "use TDD", "test first", …), so with both linked either could
+  fire. vish lives with the veri scripts it calls (`skills/tdd/scripts/`) and has since gained the
+  pre-ready criterion-break and mutation pass. This copy is a frozen snapshot — do not edit it.
