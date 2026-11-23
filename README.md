@@ -110,6 +110,14 @@ edits are live — there is no build or install step for day-to-day use.
   with an open PR are never touched. `wrap-up` closes out *this* session's work; this one sweeps
   everything the previous sessions left behind.
 
+- **[`audit`](audit/SKILL.md)** — a read-only, graded audit of a whole repository, landed as
+  `docs/codebase-audit-<YYYY-MM-DD>.md` in a PR. Six steps: pin the commit, split the repo into
+  areas from its layout and manifests, build an import graph, fan out one review per area plus one
+  for tests, get a blind second audit whose every finding is re-read in the code, then merge and
+  re-grade into High/Medium/Low. The judgement is Fran's `manage-complexity`, `refactor` and
+  `test-quality`, read by path from `fc/my-skills` and never copied — the skill stops and names the
+  path if that clone is missing, rather than pass off built-in guidance as his.
+
 - **[`machine-health`](machine-health/SKILL.md)** — **on demand**, reached with
   `/dev-tools machine-health`, since the scheduled agent below does its routine work unattended
   and the check is only needed when that agent notifies. The same idea as `housekeeping`, for the
