@@ -12,11 +12,9 @@ description: >-
 # Merge — land it on a `main` that has not moved under you
 
 **Merge only when the user says to.** Approving one PR is not approving the next; a green PR is not an
-instruction. Saying it in advance counts, and so does "afk" — that skill carries a standing merge
-permission for whatever its run finishes, satisfying this step and nothing after it.
+instruction. Saying it in advance counts; "afk" does not — it only means keep going.
 
-**And only in the project repo.** A PR in any other repo is not covered by "merge it", is not covered
-by `afk`, and does not merge until they say so for that PR. Before step 1, check `gh pr view <n>`'s
+**And only in the project repo.** A PR in any other repo is not covered by "merge it", does not merge until they say so for that PR. Before step 1, check `gh pr view <n>`'s
 repo is the session's own: `gh` happily acts on another via `-R` or from a different directory.
 
 **`main` moving is the default case**, not the exception. Every step assumes it happened and checks.

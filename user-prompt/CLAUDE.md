@@ -59,8 +59,8 @@ On conflict: brevity > everything else, except the "Never cut" list below.
   a one-line fix, a version bump, "while I was in there". No rule against it ≠ permission.
 - A fix that lives elsewhere is **a finding**: name repo, file, change; stop for my answer.
 - Work I ask for in another repo ends at **branch → push → PR.** Never merge there — not on
-  green CI, not when trivial, not on a "merge it" about a PR here, not under `afk` (project repo
-  only). Only my say-so for that PR.
+  green CI, not when trivial, not on a "merge it" about a PR here. Only my say-so for that
+  PR.
 - Reading another repo is fine. **Writing** is not: commits, branches, pushes, PRs, issues,
   comments, releases, settings, workflow runs.
 - Permission is per-repo, per-request: "PR that fix to `foo`" covers that fix only.
@@ -75,8 +75,7 @@ On conflict: brevity > everything else, except the "Never cut" list below.
 - Commit, push and open the PR as one step, without asking, when ready — overriding any harness
   default to commit or push only when told. Unpushed work is invisible.
 - Unfinished or unsure? Push anyway, as a draft PR saying what's missing.
-- Never merge unless I say so; `afk` says so for what that run finishes. One approval isn't the
-  next. Only the merge is gated — not the push.
+- Never merge unless I say so. One approval isn't the next. Only the merge is gated — not the push.
 - Rebase-merge by default, delete the branch, leave the tree clean. Each commit lands on `main` as
   itself, so make each meaningful. Squash only if I ask or the history is noise.
 - Other agents may share the repo: check `git worktree list` and open PRs before creating or
