@@ -24,15 +24,11 @@ edits are live — there is no build or install step for day-to-day use.
   The sections follow what I pointed at: a whole decision, a single option, or a finding I couldn't
   parse. It ends by offering to go deeper, so the short version is the default and the long one is
   something I ask for.
-- **[`afk`](afk/SKILL.md)** — I'm away; drive it. Every thread that doesn't need me gets finished
-  and pushed as its own draft PR; every thread that does gets *parked* rather than guessed, with
-  the question and a recommendation in the PR body where it survives the session. When everything
-  unblocked is done, the time goes on the work nobody tickets — contradictions and stale docs
-  first (they actively mislead), then whatever makes the next session cheaper, then test gaps,
-  then dead code with the evidence quoted. Leans on `delegate` throughout, since an unattended run
-  ends when the context does rather than when the work does. Absence is not authorization: merges,
-  deploys and deletions still wait. Merging does not: "afk" is the standing merge permission for
-  whatever the run finishes, through `merge`, unless I say "don't merge" on the way out.
+- **[`afk`](afk/SKILL.md)** — keep going; stop only when nothing is left. No mid-run check-ins,
+  "should I continue?" or progress summaries; a question or a stubborn failure parks that piece
+  (question recorded in the PR body) and the run moves to the next one. Meant to be said to a veri
+  run or a `vish` session as much as to a plain one. Changes when the run stops, nothing else: it
+  grants no permission, merging included.
 
 - **[`house-style`](house-style/SKILL.md)** — my engineering conventions for a project that doesn't
   know them yet: AWS + serverless + CDK + TypeScript where the choice is open, invariants made
