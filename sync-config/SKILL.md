@@ -144,7 +144,7 @@ contents — the installed set is the claim.
 | Skill | What it does | Source | Needs |
 |---|---|---|---|
 | `audit` | graded read-only repo audit | `claude-skills` | `delegate`; reads `fc/my-skills` |
-| `to-tickets` | plan → tracer-bullet tickets | `oss/skills` | `setup-matt-pocock-skills` **not linked** |
+| `vish` | TDD without a veri run | `veri` | `tdd` not linked — per project via `/vinstall` |
 
 Then one line for `~/.claude/CLAUDE.md` — not a skill, but half the install — one line per repo
 pulled only because a skill reads it (`fc/my-skills — read by audit`), and the count:
