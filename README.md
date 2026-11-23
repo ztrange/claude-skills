@@ -19,11 +19,11 @@ edits are live — there is no build or install step for day-to-day use.
   text that already exists and adds nothing to it — it never goes and observes the tree.
 
 - **[`duck`](duck/SKILL.md)** — the rubber duck, inverted: I'm the duck, so explain it to me —
-  but only the issue, not the project. It assumes I know the product and spends its half-screen on
-  the mechanism, what goes wrong, what was already ruled out, and the choice with a recommendation.
-  The sections follow what I pointed at: a whole decision, a single option, or a finding I couldn't
-  parse. It ends by offering to go deeper, so the short version is the default and the long one is
-  something I ask for.
+  but only the issue, not the project, in plain words with a concrete example and exact names. It
+  goes a layer at a time: the first duck is a ~5-line summary with the ask; each repeat on the same
+  issue goes one level deeper — the mechanism, what was ruled out and the options with their cost,
+  then the evidence (`file:line`, commands, logs). The sections follow what I pointed at: a whole
+  decision, a single option, or a finding I couldn't parse.
 - **[`afk`](afk/SKILL.md)** — keep going; stop only when nothing is left. No mid-run check-ins,
   "should I continue?" or progress summaries; a question or a stubborn failure parks that piece
   (question recorded in the PR body) and the run moves to the next one. Meant to be said to a veri
