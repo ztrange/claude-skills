@@ -24,6 +24,11 @@ edits are live — there is no build or install step for day-to-day use.
   issue goes one level deeper — the mechanism, what was ruled out and the options with their cost,
   then the evidence (`file:line`, commands, logs). The sections follow what I pointed at: a whole
   decision, a single option, or a finding I couldn't parse.
+- **[`weigh`](weigh/SKILL.md)** — both sides of a decision or idea before anyone commits: the
+  strongest honest case for, the strongest case against (always including "do nothing" and the
+  cheaper version), the one or two questions it really hinges on, and a lean with what would flip
+  it. Duck's plain style and depth ladder: short first, deeper each time I ask again; a point I
+  don't follow gets ducked. Argues the decision itself — `grilling` interviews me instead.
 - **[`afk`](afk/SKILL.md)** — keep going; stop only when nothing is left. No mid-run check-ins,
   "should I continue?" or progress summaries; a question or a stubborn failure parks that piece
   (question recorded in the PR body) and the run moves to the next one. Meant to be said to a veri
