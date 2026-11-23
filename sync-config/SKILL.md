@@ -23,6 +23,18 @@ Resolve each entry to its target, each target to its repo. **Not all one repo** 
 in the repo of the product it serves; the distinct repos are the fetch list. A regular file or
 directory where a symlink was expected: report, leave alone.
 
+The links don't show everything an installed skill leans on. Scan for the rest:
+
+```bash
+python3 ~/.claude/skills/sync-config/scripts/deps.py
+```
+
+It prints each skill's dependencies — other skills it invokes (a quoted name on a `Skill tool`
+line, a `/name` reference to a skill that exists in some repo) and repos it reads by absolute path
+(`audit` reads `fc/my-skills`). Each `fetch:` repo joins the fetch list: pulled under step 2's
+rule, never linked — its skills are read as files on purpose. A read repo marked `MISSING` is not
+cloned here: report it with the skill that reads it. Read-only; it changes nothing.
+
 ## 2. Pull — clean and on `main`, or not at all
 
 | Repo state | Action |
@@ -100,6 +112,15 @@ find ~/Documents/repos -maxdepth 3 -name SKILL.md -not -path "*/node_modules/*" 
 
 Fail closed: a reconciliation that would remove every link is a bug — stop and report.
 
+### A dependency that isn't linked is reported, never linked
+
+A `NOT LINKED` (or `NOT FOUND`, in no repo at all) from step 1's scan means an installed skill
+names one the Skill tool can't load. Linking it is not this skill's call — some repos are linked
+as a cherry-pick (`oss/skills`), and adding one widens the loaded set. Flag it in the dependent's roster row and in the report, with
+where the missing skill lives, and ask. Two cases are expected, not findings: a skill that
+installs per project with its product (veri's `tdd` and `vready`, via `/vinstall`), and a mention
+that is plainly not an invocation ("never `/vready`") — say which, in the row.
+
 ## 5. Report
 
 Sha ranges per repo pulled (`abc1234..def5678`) and the reason for any only fetched; what changed
@@ -120,18 +141,20 @@ behaviourally, not a commit dump; links added, removed or flagged, each with its
 question people arrive with is "what am I running now". Build it from `~/.claude/skills/`, not repo
 contents — the installed set is the claim.
 
-| Skill | What it does | Source |
-|---|---|---|
-| `merge` | lands a PR on a `main` that may have moved | `claude-skills` |
-| `wrap-up` | closes out finished work; fails closed on anything unmerged | `claude-skills` |
+| Skill | What it does | Source | Needs |
+|---|---|---|---|
+| `audit` | graded read-only repo audit | `claude-skills` | `delegate`; reads `fc/my-skills` |
+| `to-tickets` | plan → tracer-bullet tickets | `oss/skills` | `setup-matt-pocock-skills` **not linked** |
 
-Then one line for `~/.claude/CLAUDE.md` — not a skill, but half the install — and the count:
+Then one line for `~/.claude/CLAUDE.md` — not a skill, but half the install — one line per repo
+pulled only because a skill reads it (`fc/my-skills — read by audit`), and the count:
 `8 skills + the global prompt`.
 
 - **Gloss each row from that skill's own `description:`, compressed — never from memory**; drifted
   wording teaches the wrong trigger. Read the file.
 - **Anomalies go in the row, not a footnote** — `→ worktree`, `dangling`, `not a symlink`,
-  `on-demand, still linked`.
+  `on-demand, still linked`, a dependency `not linked`.
+- **Needs comes from the scan, not memory**; empty when it found nothing.
 - **Sort by name.**
 - **Say what is deliberately absent**, one line: skills that install with their product repo
   (`ja-changelog`), anything under `deprecated/`, and the `.on-demand` ones **by name** —

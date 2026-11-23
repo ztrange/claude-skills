@@ -100,7 +100,9 @@ edits are live — there is no build or install step for day-to-day use.
   moved, remove only what has no replacement anywhere, always pointing at the main clone. Ends
   every run with the roster of what is actually installed, including runs where nothing changed —
   a delta is unreadable without the set it applies to, and anomalies (dangling links, links into a
-  worktree) are flagged in the row rather than a footnote.
+  worktree) are flagged in the row rather than a footnote. `scripts/deps.py` adds what the links
+  don't show: each skill's dependencies on other skills (flagged when not linked — reported, never
+  auto-linked) and repos it reads by path (`audit` → `fc/my-skills`), which are pulled too.
 
 - **[`housekeeping`](housekeeping/SKILL.md)** — clean the repo of what nobody is using: local
   branches whose PR landed, worktrees whose work is provably on `main`, remote-tracking refs for
