@@ -46,12 +46,21 @@ areas** of comparable weight, each a set of top-level paths — e.g. "frontend",
 infra", "admin and scripts". Never hard-code names; a one-package repo is one area. Tests are
 **always a separate area**, wherever they live.
 
+Out of scope everywhere: generated, vendored, lockfiles, symlinks (audit the target where it lives,
+if in this repo), and frozen or archived trees (`deprecated/`, `archive/`, `legacy/` that the repo
+says is read-only) — list each excluded path under "Not checked".
+
+**Scale to the repo.** Under ~200 tracked source files, or under 20 code modules, use **one** area
+review plus the tests review, and skip step 3 (`manage-complexity` itself says it is not worth it
+below 20 modules) — say so in "Not checked". A dry run on an 82-file repo cost ~950k subagent
+tokens at full width.
+
 Size table: per area, source files and lines from `git ls-files` (exclude generated, vendored,
 lockfiles), plus the production-vs-test line split. Measured, never estimated.
 
 ### 3. Build the import graph
 
-One subagent, whole repo, language-detected (static imports; `madge`/`depcruise`-style output if
+Only for code (see "Scale to the repo"). One subagent, whole repo, language-detected (static imports; `madge`/`depcruise`-style output if
 already installed, else a grep-built graph — install nothing). Return a compact file: module →
 imports, the layer order it infers, every cycle, and modules with the most inbound and outbound
 edges. Save it to the scratchpad; each review in step 4 gets its path, not its contents.
@@ -60,20 +69,25 @@ edges. Save it to the scratchpad; each review in step 4 gets its path, not its c
 
 One read-only subagent per area from step 2, plus one for tests, **all in one message**. Each
 applies **all three** guidelines (the tests review leans on `test-quality`, the rest on the other
-two, but none skips a guideline), plus these lenses Fran's skills don't cover:
+two). Each review returns, per guideline, which checks it applied and which were not applicable
+and why — a guideline silently skipped is what this catches. Plus these lenses Fran's skills don't cover:
 
 - **Correctness and security**: auth applied per route, input validation, secrets, injection,
   concurrency and idempotency on money or state transitions, error paths that swallow failures,
   missing timeouts, logging of personal data.
 - **Efficiency**: serial or repeated I/O, scans on request paths, N+1.
-- **Deployability and agent autonomy**: CI gates, rollback, hand-synced lists, rules in
+- **Deployability and agent autonomy** (any lens with nothing to apply to is reported as n/a,
+  not stretched to fit): CI gates, rollback, hand-synced lists, rules in
   `CLAUDE.md` that compensate for something the compiler could enforce.
 
-Brief (per `/delegate`'s contract): the area's paths, the sha, the import-graph path, the three
+Brief (per `/delegate`'s contract): the area's paths, the sha (read files at that sha only — no
+live config outside the repo, no `~/.claude/`, no memory files; the guideline files are the one
+exception), no writes anywhere, not even `/tmp`, the import-graph path, the three
 guideline paths with the exclusions above, the read-only rules, and this return contract —
 
 - Findings, each: one-sentence defect, `file:line` (of the sha), severity by the scale below,
-  theme, and whether it was **read** or **reproduced** (reproduction never means running tests).
+  theme, and whether it was **read** (holds on reading the code, never executed) — every finding is, since
+nothing runs.
 - What is healthy in the area, each with the evidence.
 - What was not read line by line.
 - Cap: 60 findings, ranked most severe first.
@@ -81,18 +95,19 @@ guideline paths with the exclusions above, the read-only rules, and this return 
 ### 5. Get a blind second opinion and verify it
 
 One more subagent audits the **same sha, whole repo, all dimensions**, briefed only with the
-read-only rules and the return contract — not the step-4 results, not the guidelines' names. Use a
-different model from step 4 where the harness allows it.
+read-only rules and the return contract — not the step-4 results, not the guidelines' names. Same model tier as step 4 or higher, never
+a smaller one: in the dry run a small model broke the write-nothing rule and its findings were the
+ones dropped as wrong.
 
 Then one verifier subagent re-reads **every** second-audit finding at its cited lines and returns
-each as `holds` / `wrong` (with the line that disproves it) / `not reproduced` (holds on reading,
-untested). Drop `wrong`. Number the survivors `A1…An` and keep "not reproduced" on them in the
-report. Do the same spot-check for any step-4 High.
+each as `holds` / `wrong` (with the line that disproves it), and in the same pass re-reads every
+step-4 High. Drop `wrong`. Number the second audit's survivors `A1…An`.
 
 ### 6. Merge, re-grade, write the report
 
-Dedupe across reviews (same `file` and same defect = one finding). Re-grade every finding against
-the scale yourself — reviewers drift. Number the rest `1…n`, group each severity by theme, write
+Dedupe across reviews (same `file` and same defect = one finding); a step-4 finding the second
+audit also made keeps its `A` id, so agreement shows. Re-grade every finding against the scale
+yourself from its claim — reviewers drift; the code was already re-read for every High in step 5. Number the rest `1…n`, group each severity by theme, write
 `docs/codebase-audit-<YYYY-MM-DD>.md` on the step-1 branch, commit, push, open the PR. No `docs/`
 directory → ask where before creating one. Report back: the PR url, the verdict table, the count
 per severity.
@@ -113,7 +128,7 @@ Date: <YYYY-MM-DD>. Commit audited: `<sha>`.
 Nothing was modified, and no tests, builds or deploys were run. Static audit built from an
 import graph of the whole repository, <N> read-only reviews (<areas>, tests), and a second
 independent audit of the same commit whose findings were re-read in the code before being
-included (A1 to An). Items marked "not reproduced" come from reading only.
+included (A1 to An). Every finding comes from reading; none was reproduced by running it.
 
 Guidelines used: `/manage-complexity` (…), `/refactor` (smell catalog and severity rules),
 `/test-quality` (…).
@@ -122,8 +137,10 @@ Severity: <the three lines above>. All paths are relative to the repository root
 
 ## Verdict by dimension
 | Dimension | State |   ← one row each: Layering and coupling; Cohesion and abstraction;
-                          Correctness and security; Efficiency; Testability; Test quality;
-                          Deployability; Agent autonomy. State = one word, then the reason.
+                          Correctness and security; Efficiency; Testability (seams in the
+                          production code); Test quality (the tests themselves);
+                          Deployability; Agent autonomy. State = one word, then the reason;
+                          "n/a" when nothing applies.
 ## Recommended order of work   ← numbered, each citing finding ids and the harm it removes
 ## Size                        ← the step-2 table, then the production/test split
 ## High severity               ← ### per theme; each finding: **id. Claim.** mechanism, then
@@ -139,4 +156,5 @@ Severity: <the three lines above>. All paths are relative to the repository root
 
 - Run anything that builds, tests, installs or deploys, or edit any file but the report.
 - Report a finding without `file:line`, or one the verifier marked `wrong`.
+- Read outside the audited sha, except Fran's three guideline files.
 - Merge the report PR.
