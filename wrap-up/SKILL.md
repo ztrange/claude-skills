@@ -71,6 +71,9 @@ worktree by default. Reversible — archived sessions reopen from the Archived l
   choice, and never an unqualified "stops the process" — nothing is running by step 5, so that reads
   as though a build were about to be killed.
 - Never archive over unmerged, unpushed or uncommitted work.
+- **No `archive_session` tool** (the CLI has none; only the desktop and web apps do) → skip step 5 and
+  end the report with one line: "Not archived: no archive tool in this client — archive it from the
+  session list." Never improvise another way to end the session.
 - Wrapping up after every merged PR → mention the "Auto-archive on PR close" preference in Settings
   once, then stop.
 
