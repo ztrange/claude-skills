@@ -6,6 +6,8 @@
 # cloned here or not, and no local clone is fetched into or checked out.
 # kitty's ctrl+shift+p>d hint map calls this with whatever PR reference was picked on screen.
 set -eu
+# kitty launches this without the login shell's PATH, so Homebrew's gh would not be found.
+PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 
 fail() { echo "pr-diff: $*" >&2; [ -t 0 ] && { printf 'Press Enter to close.'; read -r _; }; exit 1; }
 
@@ -16,8 +18,9 @@ case $ref in
     n=$(printf %s "$ref" | sed -E 's#.*/pull/([0-9]+).*#\1#') ;;
   \#[0-9]*)
     n=${ref#\#}
-    repo=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>/dev/null) \
-      || fail "#$n: $(pwd) is not in a GitHub repo gh can see" ;;
+    command -v gh >/dev/null || fail "gh not found on PATH ($PATH)"
+    repo=$(gh repo view --json nameWithOwner -q .nameWithOwner 2>&1) \
+      || fail "#$n: no GitHub repo for $(pwd): $repo" ;;
   *) fail "not a PR reference: '$ref' (want a github.com/…/pull/N URL or #N)" ;;
 esac
 
