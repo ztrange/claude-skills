@@ -16,6 +16,7 @@ Run `scripts/install.sh`. It is idempotent and prints one line per item (`ok` / 
 | kitty, JetBrainsMono Nerd Font | Homebrew casks | `/Applications`, `~/Library/Fonts` |
 | Config — only our changes from kitty's defaults, each with why | `files/kitty.conf` | `~/.config/kitty/kitty.conf` |
 | Dracula colours (the `include` in kitty.conf) | `files/current-theme.conf` | `~/.config/kitty/current-theme.conf` |
+| PR diff viewer: `ctrl+shift+p` `d` on any `#N` / PR URL on screen | `files/pr-diff.sh` | `~/.config/kitty/pr-diff.sh` |
 | `claude()` wrapper setting kitty's `in_claude` user var | `files/claude-kitty.zsh` | appended to `~/.zshrc` |
 
 - An existing file that differs is kept as `<file>.bak-<timestamp>` before it is replaced — never

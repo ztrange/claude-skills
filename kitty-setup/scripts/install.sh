@@ -24,6 +24,8 @@ place() {
 }
 place "$files/kitty.conf"         "$HOME/.config/kitty/kitty.conf"
 place "$files/current-theme.conf" "$HOME/.config/kitty/current-theme.conf"
+place "$files/pr-diff.sh"         "$HOME/.config/kitty/pr-diff.sh"
+chmod +x "$HOME/.config/kitty/pr-diff.sh"
 
 zshrc="$HOME/.zshrc"
 if [ -f "$zshrc" ] && grep -q 'SetUserVar=in_claude' "$zshrc"; then

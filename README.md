@@ -151,7 +151,9 @@ edits are live — there is no build or install step for day-to-day use.
   3,650-line commented template, each with why — plus the Dracula theme and the zsh `claude()`
   wrapper that sets kitty's `in_claude` user var, without which the Claude-only `cmd+v` image
   paste and `cmd+backspace` clear-input maps never fire. Copies, not symlinks (kitty's theme
-  kitten rewrites `kitty.conf` in place); replaced files are kept as `.bak-<timestamp>`.
+  kitten rewrites `kitty.conf` in place); replaced files are kept as `.bak-<timestamp>`. Also
+  `files/pr-diff.sh`: `ctrl+shift+p` `d` picks any `#N` or GitHub PR URL on screen — a Claude
+  reply included — and opens that PR in `kitten diff`.
 
 - **[`claude-cli-setup`](claude-cli-setup/SKILL.md)** — **on demand**, `/dev-tools claude-cli`:
   make Claude Code run as it does here — the `copy-code` mod (a Copy button per code block), the
